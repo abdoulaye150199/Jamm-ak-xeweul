@@ -53,31 +53,6 @@ function HeroInspired() {
     <div className="pointer-events-none absolute -right-20 bottom-20 h-96 w-96 rounded-full bg-white/20 blur-3xl" />
 
     <div className="relative mx-auto flex min-h-[calc(100svh-76px)] max-w-[1500px] items-center px-5 pb-20 pt-16 sm:px-8 lg:px-14">
-      <div className="pointer-events-none absolute inset-0 hidden lg:block">
-        <div className="hero-tile absolute left-[3%] top-[14%] w-52 -rotate-6 overflow-hidden rounded-2xl border-4 border-brand-950/10 bg-brand-950">
-          <img src="/image%20hero/image%20copy%202.png" alt="Une rue de Thiès-Nord" className="h-44 w-full object-cover" />
-          <p className="bg-brand-950 px-3 py-2 text-[10px] font-black uppercase tracking-[.18em] text-white">Thiès-Nord · terrain</p>
-        </div>
-        <div className="hero-tile absolute left-[11%] bottom-[22%] w-28 rotate-6 overflow-hidden rounded-xl border-4 border-white/80">
-          <img src="/image%20hero/image%20copy%206.png" alt="Action citoyenne de JÀMM AK XÉEWAL" className="h-32 w-full object-cover" />
-        </div>
-        <div className="hero-tile absolute left-[42%] top-[4%] w-32 -rotate-3 overflow-hidden rounded-xl border-4 border-white/80">
-          <img src="/image%20hero/image.png" alt="Monument Lat Dior à Thiès" className="h-20 w-full object-cover" />
-        </div>
-        <div className="hero-tile absolute right-[9%] top-[13%] w-24 rotate-6 overflow-hidden rounded-xl border-4 border-white/80">
-          <img src="/image%20hero/image%20copy%204.png" alt="École supérieure polytechnique de Thiès" className="h-24 w-full object-cover" />
-        </div>
-        <div className="hero-tile absolute right-[3%] top-[37%] w-44 -rotate-3 overflow-hidden rounded-xl border-4 border-brand-950/10">
-          <img src="/image%20hero/image%20copy%205.png" alt="Stade Lat Dior de Thiès" className="h-32 w-full object-cover" />
-        </div>
-        <div className="hero-tile absolute right-[14%] bottom-[15%] w-36 rotate-3 overflow-hidden rounded-xl border-4 border-white/80">
-          <img src="/image%20hero/image%20copy%203.png" alt="Gare historique de Thiès" className="h-32 w-full object-cover" />
-        </div>
-        <div className="hero-tile absolute left-[42%] bottom-[7%] w-40 -rotate-6 overflow-hidden rounded-xl border-4 border-white/80">
-          <img src="/image%20hero/image%20copy.png" alt="Place publique de Thiès-Nord" className="h-24 w-full object-cover" />
-        </div>
-      </div>
-
       <div className="relative z-10 mx-auto w-full max-w-4xl text-center">
         <h1 className="display-title reveal-up reveal-up-delay-1 mt-7 text-[3rem] font-black leading-[.86] tracking-[-.09em] sm:text-6xl lg:text-[6.4rem]">
           Écouter les<br />
