@@ -1,0 +1,52 @@
+'use client';
+
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, Facebook, Instagram, Mail, MapPin, Menu, MessageCircle, Phone, Send, Sparkles, X } from 'lucide-react';
+import { activities, navLinks } from '@/lib/data';
+
+export function Logo({ light = false }: { light?: boolean }) {
+  return <Link href="/" className="group flex items-center gap-3">
+    <span className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] ${light ? 'bg-sun-500 text-brand-950' : 'bg-brand-900 text-white'} transition group-hover:rotate-3`}>
+      <span className="text-sm font-black tracking-tighter">JA</span><span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-sun-500 ring-2 ring-white" />
+    </span>
+    <span className={`font-extrabold leading-[.9] tracking-[-.04em] ${light ? 'text-white' : 'text-brand-900'}`}>JÀMM AK<br /><span className="text-brand-600">XÉEWAL</span></span>
+  </Link>;
+}
+
+function LegacyPublicHeader() {
+  const [open, setOpen] = useState(false);
+  return <header className="sticky top-0 z-40 border-b border-[#dfe3d8]/80 bg-[#f4f4f1]/85 backdrop-blur-xl"><ScrollProgress /><div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-5 lg:px-8"><Logo /><nav className="hidden items-center gap-1 lg:flex">{navLinks.map((item, index) => <Link key={item.href} href={item.href} className={`rounded-full px-4 py-2 text-[13px] font-bold transition ${index === 0 ? 'bg-white text-brand-900 shadow-sm' : 'text-slate-500 hover:text-brand-900'}`}>{item.label}</Link>)}</nav><div className="hidden items-center gap-3 lg:flex"><span className="mr-2 text-xs font-bold text-slate-400">FR / WOLOF</span><Link href="/connexion" className="text-sm font-bold text-brand-900 transition hover:text-brand-600">Se connecter</Link><Link href="/inscription" className="btn-primary !bg-brand-900 !px-5 !py-2.5">Rejoindre <ArrowUpRight size={15} /></Link></div><div className="flex items-center gap-2 lg:hidden"><Link href="/inscription" className="btn-primary !bg-brand-900 !px-4 !py-2.5 !text-xs">Adhérer</Link><button onClick={() => setOpen(!open)} className="rounded-full border border-slate-200 p-2.5 text-brand-900" aria-label="Menu">{open ? <X size={19} /> : <Menu size={19} />}</button></div></div>{open && <div className="border-t border-[#dfe3d8] bg-[#f4f4f1] px-5 pb-6 pt-3 lg:hidden"><nav className="flex flex-col gap-1">{navLinks.map(item => <Link onClick={() => setOpen(false)} key={item.href} href={item.href} className="rounded-2xl px-4 py-3 font-bold text-slate-600 hover:bg-white hover:text-brand-900">{item.label}</Link>)}</nav><div className="mt-4 flex flex-col gap-2 border-t border-[#dfe3d8] pt-4"><Link href="/connexion" className="btn-secondary">Se connecter</Link><Link href="/signaler" className="btn-primary !bg-brand-900">Signaler un besoin <ArrowUpRight size={15} /></Link></div></div>}</header>;
+}
+
+function ScrollProgress() {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const update = () => {
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(scrollable > 0 ? (window.scrollY / scrollable) * 100 : 0);
+    };
+    update(); window.addEventListener('scroll', update, { passive: true });
+    return () => window.removeEventListener('scroll', update);
+  }, []);
+  return <span className="absolute inset-x-0 bottom-0 h-0.5 origin-left bg-brand-600 transition-transform duration-150" style={{ transform: `scaleX(${progress / 100})` }} />;
+}
+
+export function Footer() {
+  return <footer className="bg-brand-950 px-5 pb-6 pt-16 text-white lg:px-8"><div className="mx-auto max-w-7xl"><div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]"><div><Logo light /><p className="mt-6 max-w-xs text-sm leading-7 text-white/55">Une plateforme citoyenne pour écouter, relier et faire avancer Thiès-Nord.</p><Link href="/inscription" className="mt-7 inline-flex items-center gap-2 rounded-full bg-sun-500 px-4 py-2.5 text-sm font-extrabold text-brand-950 transition hover:bg-sun-400">Faire partie du mouvement <ArrowUpRight size={15} /></Link></div><FooterCol title="Explorer" links={navLinks} /><FooterCol title="Participer" links={[{ href: '/inscription', label: 'Adhérer au mouvement' }, { href: '/signaler', label: 'Déclarer un besoin' }, { href: '/idee', label: 'Proposer une idée' }, { href: '/espace-membre', label: 'Mon espace citoyen' }]} /><div><h4 className="font-extrabold">Contact</h4><div className="mt-5 space-y-4 text-sm leading-6 text-white/55"><p className="flex gap-3"><MapPin size={17} className="shrink-0 text-sun-500" />Thiès-Nord, Sénégal</p><p className="flex gap-3"><Mail size={17} className="shrink-0 text-sun-500" />contact@jammakxeewal.sn</p><p className="flex gap-3"><Phone size={17} className="shrink-0 text-sun-500" />+221 77 123 45 67</p></div><div className="mt-6 flex gap-2"><a href="#" className="rounded-full bg-white/10 p-2.5 text-white/60 transition hover:bg-sun-500 hover:text-brand-950"><Facebook size={16} /></a><a href="#" className="rounded-full bg-white/10 p-2.5 text-white/60 transition hover:bg-sun-500 hover:text-brand-950"><Instagram size={16} /></a><a href="#" className="rounded-full bg-white/10 p-2.5 text-white/60 transition hover:bg-sun-500 hover:text-brand-950"><MessageCircle size={16} /></a></div></div></div><div className="mt-14 flex flex-col justify-between gap-3 border-t border-white/10 pt-6 text-xs text-white/35 md:flex-row"><span>© 2026 JÀMM AK XÉEWAL</span><span>Construire ensemble, quartier après quartier.</span></div></div></footer>;
+}
+
+function FooterCol({ title, links }: { title: string; links: { href: string; label: string }[] }) { return <div><h4 className="font-extrabold">{title}</h4><div className="mt-5 flex flex-col items-start gap-3 text-sm text-white/55">{links.map(link => <Link key={link.href} href={link.href} className="transition hover:text-sun-400">{link.label}</Link>)}</div></div>; }
+
+export function ChatWidget() {
+  const [open, setOpen] = useState(false); const [value, setValue] = useState(''); const [sent, setSent] = useState('');
+  return <div className="fixed bottom-5 right-5 z-50"><button onClick={() => setOpen(!open)} className="flex h-14 w-14 items-center justify-center rounded-full bg-sun-500 text-brand-950 shadow-xl shadow-brand-900/20 transition hover:-translate-y-1 hover:bg-sun-400" aria-label="Ouvrir le contact"><MessageCircle size={22} /></button>{open && <div className="absolute bottom-16 right-0 w-[calc(100vw-40px)] max-w-[370px] overflow-hidden rounded-[1.6rem] border border-slate-200 bg-white shadow-soft"><div className="flex items-center justify-between bg-brand-900 p-5 text-white"><div className="flex items-center gap-3"><div className="rounded-xl bg-sun-500 p-2 text-brand-950"><Sparkles size={16} /></div><div><p className="font-bold">Contact rapide</p><p className="text-xs text-white/50">L’équipe vous répond</p></div></div><button onClick={() => setOpen(false)}><X size={18} /></button></div><div className="space-y-4 bg-[#f4f4ef] p-4"><div className="max-w-[88%] rounded-2xl rounded-tl-none bg-white p-3 text-sm leading-6 text-slate-600 shadow-sm">Salam 👋 Comment pouvons-nous vous aider ?</div>{sent && <div className="ml-auto max-w-[88%] rounded-2xl rounded-tr-none bg-brand-900 p-3 text-sm leading-6 text-white">{sent}</div>}<div className="flex gap-2"><input value={value} onChange={event => setValue(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && value) { setSent(value); setValue(''); } }} placeholder="Votre message..." className="input-focus !rounded-full !py-2.5" /><button onClick={() => { if (value) { setSent(value); setValue(''); } }} className="rounded-full bg-sun-500 px-3 text-brand-950"><Send size={16} /></button></div></div></div>}</div>;
+}
+
+export function ActivityCard({ activity, compact = false }: { activity: typeof activities[number]; compact?: boolean }) { return <article className={`group relative overflow-hidden rounded-[1.6rem] bg-brand-900 ${compact ? 'h-72' : 'h-[390px]'}`}><img src={activity.image} alt="" className="absolute inset-0 h-full w-full object-cover opacity-80 transition duration-700 group-hover:scale-105" /><div className="absolute inset-0 bg-gradient-to-t from-brand-950 via-brand-950/35 to-transparent" /><div className="relative z-10 flex h-full flex-col justify-end p-6 text-white"><div className="mb-3 flex items-center justify-between gap-2"><span className="rounded-full bg-sun-500 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-brand-950">{activity.category}</span><span className="flex items-center gap-1 text-xs text-white/65"><CalendarDays size={12} /> {activity.photos}</span></div><h3 className={`${compact ? 'text-xl' : 'text-2xl'} font-extrabold leading-tight tracking-tight`}>{activity.title}</h3><p className="mt-3 text-xs font-bold uppercase tracking-wider text-white/55">{activity.date}</p></div></article>; }
+
+export function ActivitySlider() { const [index, setIndex] = useState(0); return <div><div className="grid gap-5 md:grid-cols-3">{activities.map((activity, itemIndex) => <div key={activity.title} className={itemIndex === index ? '' : 'hidden md:block'}><ActivityCard activity={activity} /></div>)}</div><div className="mt-5 flex items-center justify-between md:hidden"><span className="text-sm font-bold text-slate-500">0{index + 1} / 0{activities.length}</span><div className="flex gap-2"><button onClick={() => setIndex((index + activities.length - 1) % activities.length)} className="rounded-full border border-slate-200 bg-white p-2"><ChevronLeft size={17} /></button><button onClick={() => setIndex((index + 1) % activities.length)} className="rounded-full border border-slate-200 bg-white p-2"><ChevronRight size={17} /></button></div></div></div>; }
+
+export function RevealCheck({ children }: { children: React.ReactNode }) { return <span className="inline-flex items-center gap-2"><span className="rounded-full bg-brand-100 p-1 text-brand-600">✓</span>{children}</span>; }
+
+export { PublicHeader } from '@/components/header';
