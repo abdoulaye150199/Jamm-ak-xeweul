@@ -3,6 +3,7 @@ import 'server-only';
 import { createHmac, timingSafeEqual } from 'crypto';
 
 export const ADMIN_SESSION_COOKIE = 'jamm_admin_session';
+const SESSION_TTL_SECONDS = 60 * 60 * 8;
 
 function getSessionSecret() {
   const secret = process.env.ADMIN_SESSION_SECRET;
@@ -11,7 +12,9 @@ function getSessionSecret() {
 }
 
 function createSessionToken() {
-  return createHmac('sha256', getSessionSecret()).update('jamm-ak-xeweul-admin').digest('hex');
+  const payload = `jamm-ak-xeweul-admin.${Date.now()}`;
+  const signature = createHmac('sha256', getSessionSecret()).update(payload).digest('base64url');
+  return `${Buffer.from(payload).toString('base64url')}.${signature}`;
 }
 
 function safeCompare(left: string, right: string) {
@@ -30,7 +33,14 @@ export function isAdminCredentials(email: string, password: string) {
 export function isValidAdminSession(token?: string) {
   if (!token) return false;
   try {
-    return safeCompare(token, createSessionToken());
+    const [encodedPayload, signature] = token.split('.');
+    if (!encodedPayload || !signature) return false;
+    const payload = Buffer.from(encodedPayload, 'base64url').toString('utf8');
+    const expectedSignature = createHmac('sha256', getSessionSecret()).update(payload).digest('base64url');
+    if (!safeCompare(signature, expectedSignature)) return false;
+    const issuedAt = Number(payload.slice(payload.lastIndexOf('.') + 1));
+    const ageSeconds = (Date.now() - issuedAt) / 1000;
+    return payload.startsWith('jamm-ak-xeweul-admin.') && Number.isFinite(issuedAt) && ageSeconds >= 0 && ageSeconds <= SESSION_TTL_SECONDS;
   } catch {
     return false;
   }

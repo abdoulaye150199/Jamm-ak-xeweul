@@ -8,6 +8,13 @@
       "when": 1788270904098,
       "tag": "0000_dizzy_layla_miller",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788270904099,
+      "tag": "0001_add_member_auth_and_event_date",
+      "breakpoints": true
     }
   ]
 }

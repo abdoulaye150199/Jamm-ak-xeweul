@@ -1,21 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Activity, ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, FileText, Plus, Search, Users } from 'lucide-react';
 import {
   AdminSidebar,
   AdminTopbar,
-  DashboardEvent,
-  DashboardMember,
-  DashboardNotification,
-  Contribution,
   NotificationsPanel,
   SettingsModal,
   Status,
-  formatRelativeDate,
 } from '@/components/admin-dashboard';
+import type { Contribution, DashboardEvent, DashboardMember, DashboardNotification } from '@/components/admin/types';
+import { formatRelativeDate } from '@/lib/format';
 
 type ListKind = 'contributions' | 'membres' | 'activites';
 
@@ -57,16 +54,25 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
   const [page, setPage] = useState(1);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [memberAlerts, setMemberAlerts] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [totalItems, setTotalItems] = useState(0);
   const pageSize = 8;
 
   async function refresh() {
-    const response = await fetch('/api/admin/dashboard', { cache: 'no-store' });
-    if (!response.ok) return;
-    const data = await response.json();
-    setContributions(data.contributions ?? []);
-    setMembers(data.members ?? []);
-    setEvents(data.events ?? []);
-    setNotifications(data.notifications ?? []);
+    try {
+      const section = kind === 'membres' ? 'members' : kind === 'activites' ? 'events' : 'contributions';
+      const response = await fetch(`/api/admin/dashboard?section=${section}&page=${page}&pageSize=${pageSize}&q=${encodeURIComponent(query)}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error('dashboard request failed');
+      const data = await response.json();
+      if (kind === 'contributions') setContributions(data.items ?? []);
+      if (kind === 'membres') setMembers(data.items ?? []);
+      if (kind === 'activites') setEvents(data.items ?? []);
+      setTotalItems(data.total ?? 0);
+      setNotifications(data.notifications ?? []);
+      setLoadError('');
+    } catch {
+      setLoadError('Les données sont momentanément indisponibles.');
+    }
   }
 
   useEffect(() => {
@@ -74,15 +80,10 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
     if (!autoRefresh) return;
     const interval = window.setInterval(refresh, 10000);
     return () => window.clearInterval(interval);
-  }, [autoRefresh]);
+  }, [autoRefresh, kind, page, query]);
 
-  const filteredContributions = useMemo(() => contributions.filter(item => `${item.title} ${item.author} ${item.neighborhood}`.toLowerCase().includes(query.toLowerCase())), [contributions, query]);
-  const filteredMembers = useMemo(() => members.filter(item => `${item.firstName} ${item.lastName} ${item.email} ${item.neighborhood}`.toLowerCase().includes(query.toLowerCase())), [members, query]);
-  const filteredEvents = useMemo(() => events.filter(item => `${item.title} ${item.place} ${item.weekday}`.toLowerCase().includes(query.toLowerCase())), [events, query]);
-  const totalItems = kind === 'contributions' ? filteredContributions.length : kind === 'membres' ? filteredMembers.length : filteredEvents.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const currentPage = Math.min(page, totalPages);
-  const start = (currentPage - 1) * pageSize;
 
   useEffect(() => setPage(1), [kind, query]);
 
@@ -99,9 +100,9 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
     await fetch('/api/admin/notifications', { method: 'POST' });
   }
 
-  const visibleContributions = filteredContributions.slice(start, start + pageSize);
-  const visibleMembers = filteredMembers.slice(start, start + pageSize);
-  const visibleEvents = filteredEvents.slice(start, start + pageSize);
+  const visibleContributions = contributions;
+  const visibleMembers = members;
+  const visibleEvents = events;
 
   return <div className="min-h-screen bg-[#f4f7f3] pt-[68px] text-brand-900 sm:pt-[76px]">
     <AdminTopbar unreadCount={unreadCount} onMenu={() => setMenuOpen(true)} onNotifications={() => { setNotificationsOpen(value => !value); if (unreadCount) markNotificationsRead(); }} />
@@ -112,7 +113,7 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="eyebrow text-brand-600">{config.eyebrow}</p><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{config.title}</h1><p className="mt-2 max-w-2xl text-sm text-slate-500 sm:text-base">{config.description}</p></div>
           <div className="flex flex-wrap gap-2">
-            {kind === 'activites' && <Link href="/admin" className="btn-primary !rounded-xl !bg-brand-900"><Plus size={17} /> Nouvelle activité</Link>}
+            {kind === 'activites' && <Link href="/admin" className="btn-primary !rounded-xl !bg-brand-900"><Plus size={17} /> Ouvrir le tableau</Link>}
             <Link href="/admin" className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold shadow-sm transition hover:border-brand-300 hover:bg-brand-50"><ArrowUpRight size={16} /> Vue d’ensemble</Link>
           </div>
         </div>
@@ -122,6 +123,7 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
           {kind === 'contributions' && <ContributionList items={visibleContributions} empty={config.empty} />}
           {kind === 'membres' && <MemberList items={visibleMembers} empty={config.empty} />}
           {kind === 'activites' && <EventList items={visibleEvents} empty={config.empty} />}
+          {loadError && <p role="alert" className="border-t border-red-100 bg-red-50 px-5 py-3 text-sm font-bold text-red-600">{loadError}</p>}
           <Pagination page={currentPage} totalPages={totalPages} onChange={setPage} />
         </section>
       </main>

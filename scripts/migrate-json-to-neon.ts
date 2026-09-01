@@ -31,6 +31,7 @@ async function main() {
   for (const event of source.events ?? []) {
     await tx.insert(events).values({
       id: String(event.id),
+      eventDate: event.eventDate ? new Date(String(event.eventDate)) : null,
       day: String(event.day),
       weekday: String(event.weekday),
       title: String(event.title),

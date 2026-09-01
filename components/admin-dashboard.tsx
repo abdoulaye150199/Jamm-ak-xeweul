@@ -8,13 +8,8 @@ import {
   LayoutDashboard, Lightbulb, LogOut, Menu, MoreHorizontal, Plus,
   Search, Settings, Users, X,
 } from 'lucide-react';
-
-export type ContributionStatus = 'Nouveau' | 'En étude' | 'En cours' | 'Résolu';
-export type ContributionType = 'Besoin' | 'Idée';
-export type Contribution = { id: string; title: string; author: string; neighborhood: string; type: ContributionType; status: ContributionStatus; description: string; phone: string; createdAt: string };
-export type DashboardEvent = { id: string; day: string; weekday: string; title: string; time: string; place: string; featured?: boolean; createdAt: string };
-export type DashboardMember = { id: string; firstName: string; lastName: string; email: string; neighborhood: string; phone: string; createdAt: string };
-export type DashboardNotification = { id: string; type: 'member' | 'event' | 'contribution'; title: string; message: string; createdAt: string; read: boolean };
+import type { Contribution, ContributionStatus, ContributionType, DashboardEvent, DashboardMember, DashboardNotification } from '@/components/admin/types';
+import { formatRelativeDate, formatTodayDate } from '@/lib/format';
 
 const sideLinks = [
   { label: "Vue d'ensemble", icon: LayoutDashboard, href: '/admin#top', section: 'top' },
@@ -38,6 +33,7 @@ export function AdminDashboard() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [memberAlerts, setMemberAlerts] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const router = useRouter();
 
   const filteredContributions = contributions.filter(contribution => {
@@ -49,13 +45,18 @@ export function AdminDashboard() {
   const unreadCount = notifications.filter(notification => !notification.read && (memberAlerts || notification.type !== 'member')).length;
 
   async function refreshDashboard() {
-    const response = await fetch('/api/admin/dashboard', { cache: 'no-store' });
-    if (!response.ok) return;
-    const data = await response.json();
-    setMembers(data.members ?? []);
-    setPublishedEvents(data.events ?? []);
-    setContributions(data.contributions ?? []);
-    setNotifications(data.notifications ?? []);
+    try {
+      const response = await fetch('/api/admin/dashboard', { cache: 'no-store' });
+      if (!response.ok) throw new Error('dashboard request failed');
+      const data = await response.json();
+      setMembers(data.members ?? []);
+      setPublishedEvents(data.events ?? []);
+      setContributions(data.contributions ?? []);
+      setNotifications(data.notifications ?? []);
+      setLoadError('');
+    } catch {
+      setLoadError('Les données du tableau de bord sont momentanément indisponibles.');
+    }
   }
 
   useEffect(() => {
@@ -139,6 +140,7 @@ export function AdminDashboard() {
           <div className="flex flex-col gap-2 sm:flex-row"><button onClick={exportReport} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold shadow-sm transition hover:border-brand-300 hover:bg-brand-50"><ArrowUpRight size={16} /> Exporter le rapport</button><button onClick={() => setEventOpen(true)} className="btn-primary !rounded-xl !bg-brand-900"><Plus size={17} /> Nouvelle activité</button></div>
         </div>
         {flash && <div className="mb-5 flex items-center justify-between rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-bold text-brand-700"><span>{flash}</span><button onClick={() => setFlash('')} aria-label="Fermer le message"><X size={16} /></button></div>}
+        {loadError && <div role="alert" className="mb-5 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-600"><span>{loadError}</span><button onClick={refreshDashboard} className="underline">Réessayer</button></div>}
 
         <AdminStats memberCount={members.length} contributionCount={contributions.length} eventCount={publishedEvents.length} pendingCount={pendingCount} responseRate={resolvedRate} />
 
@@ -194,18 +196,4 @@ export function SettingsModal({ autoRefresh, memberAlerts, onClose, onSave }: { 
   const [nextAutoRefresh, setNextAutoRefresh] = useState(autoRefresh);
   const [nextMemberAlerts, setNextMemberAlerts] = useState(memberAlerts);
   return <div className="fixed inset-0 z-[60] flex items-center justify-center bg-brand-950/50 p-4" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl sm:p-8"><div className="flex items-start justify-between gap-4"><div><p className="eyebrow text-brand-600">Compte administrateur</p><h2 className="mt-2 text-2xl font-extrabold">Paramètres</h2><p className="mt-1 text-sm text-slate-500">Personnalisez le suivi de votre tableau de bord.</p></div><button onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100" aria-label="Fermer les paramètres"><X size={19} /></button></div><form onSubmit={event => { event.preventDefault(); onSave(nextAutoRefresh, nextMemberAlerts); }} className="mt-6 space-y-3"><label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 p-4 transition hover:border-brand-300 hover:bg-brand-50"><input checked={nextMemberAlerts} onChange={event => setNextMemberAlerts(event.target.checked)} type="checkbox" className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600" /><span><strong className="block text-sm">Alertes de nouvelles adhésions</strong><span className="mt-1 block text-xs leading-5 text-slate-500">Afficher une alerte dans la cloche lorsqu’un membre rejoint le mouvement.</span></span></label><label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 p-4 transition hover:border-brand-300 hover:bg-brand-50"><input checked={nextAutoRefresh} onChange={event => setNextAutoRefresh(event.target.checked)} type="checkbox" className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600" /><span><strong className="block text-sm">Actualisation automatique</strong><span className="mt-1 block text-xs leading-5 text-slate-500">Rechercher les nouvelles données du dashboard toutes les 10 secondes.</span></span></label><div className="flex flex-col-reverse gap-3 pt-3 sm:flex-row sm:justify-end"><button type="button" onClick={onClose} className="btn-secondary">Annuler</button><button className="btn-primary"><CheckCircle2 size={16} /> Enregistrer</button></div></form></div></div>;
-}
-
-export function formatRelativeDate(value: string) {
-  const minutes = Math.floor((Date.now() - new Date(value).getTime()) / 60000);
-  if (minutes < 1) return 'À l’instant';
-  if (minutes < 60) return `Il y a ${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `Il y a ${hours} h`;
-  return new Date(value).toLocaleDateString('fr-FR');
-}
-
-function formatTodayDate() {
-  const value = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
-  return value.charAt(0).toUpperCase() + value.slice(1);
 }
