@@ -1,19 +1,17 @@
 import Link from 'next/link';
 import { ArrowDownRight, ArrowRight, CalendarDays, Check, ChevronRight, Clock3, HeartHandshake, Lightbulb, MapPin, Megaphone, MoveUpRight, QrCode, Quote, Sparkles, Users } from 'lucide-react';
 import { ActivitySlider, ChatWidget, Footer, PublicHeader } from '@/components/site';
-import { SplashScreen } from '@/components/splash-screen';
 import { events } from '@/lib/data';
 
 export default function Home() {
   return (
     <div className="min-h-screen overflow-hidden bg-[#f4f4f1]">
-      <SplashScreen />
       <PublicHeader />
       <main>
         <HeroInspired />
+        <Activities />
         <PresidentMessage />
         <Manifesto />
-        <Activities />
         <ActionSection />
         <Impact />
         <Agenda />
@@ -39,73 +37,48 @@ function HeroV3() {
 
 function QrCard() {
   const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&color=00351f&bgcolor=ffffff&data=https%3A%2F%2Fjammakxeewal.sn%2Finscription';
-  return <div className="group relative w-full max-w-[260px] overflow-hidden rounded-[2rem] border border-white/70 bg-[#f5f7f3] p-5 text-center text-brand-950 shadow-2xl transition duration-500 hover:-translate-y-2 lg:w-[260px]"><div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-sun-500 via-sun-400 to-brand-600" /><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-200 bg-brand-100 text-brand-600"><QrCode size={24} /></div><h2 className="mt-4 text-2xl font-extrabold tracking-tight">Rejoignez-nous</h2><p className="mt-2 text-xs leading-5 text-slate-500">Scannez ce code avec votre téléphone pour adhérer au mouvement en <strong className="text-brand-600">1 minute</strong>.</p><div className="relative mx-auto mt-5 w-fit rounded-3xl bg-white p-3 shadow-[0_12px_30px_rgba(0,0,0,.12)]"><span className="absolute left-2 top-2 h-4 w-4 rounded-tl-md border-l-4 border-t-4 border-sun-500" /><span className="absolute right-2 top-2 h-4 w-4 rounded-tr-md border-r-4 border-t-4 border-sun-500" /><span className="absolute bottom-2 left-2 h-4 w-4 rounded-bl-md border-b-4 border-l-4 border-sun-500" /><span className="absolute bottom-2 right-2 h-4 w-4 rounded-br-md border-b-4 border-r-4 border-sun-500" /><img src={qrUrl} alt="QR code pour rejoindre le mouvement" className="h-36 w-36 rounded-xl object-contain" /></div><Link href="/inscription" className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-brand-950 px-4 py-3 text-sm font-extrabold text-sun-400 transition hover:bg-brand-600">Ou cliquez ici <ArrowRight size={15} /></Link></div>;
+  return <div className="group relative w-full max-w-[310px] overflow-hidden rounded-[2.25rem] border-2 border-white bg-[#f5f7f3] p-6 text-center text-brand-950 shadow-[0_30px_60px_rgba(0,0,0,.35)] transition duration-500 hover:-translate-y-2 sm:p-7"><div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-sun-500 via-sun-400 to-brand-600" /><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-200 bg-brand-100 text-brand-600"><QrCode size={24} /></div><h2 className="mt-3 text-xl font-extrabold tracking-tight">Rejoignez-nous</h2><p className="mx-auto mt-2 max-w-xs text-xs leading-5 text-slate-500">Scannez ce code avec votre téléphone pour adhérer au mouvement en <strong className="text-brand-600">1 minute</strong>.</p><div className="relative mx-auto mt-5 w-fit rounded-3xl bg-white p-4 shadow-[0_12px_30px_rgba(0,0,0,.12)]"><span className="absolute left-3 top-3 h-4 w-4 rounded-tl-md border-l-4 border-t-4 border-sun-500" /><span className="absolute right-3 top-3 h-4 w-4 rounded-tr-md border-r-4 border-t-4 border-sun-500" /><span className="absolute bottom-3 left-3 h-4 w-4 rounded-bl-md border-b-4 border-l-4 border-sun-500" /><span className="absolute bottom-3 right-3 h-4 w-4 rounded-br-md border-b-4 border-r-4 border-sun-500" /><img src={qrUrl} alt="QR code pour rejoindre le mouvement" className="h-40 w-40 rounded-xl object-contain" /></div><Link href="/inscription" className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-brand-950 px-4 py-3 text-xs font-extrabold text-sun-400 transition hover:bg-brand-600">Ou cliquez ici <ArrowRight size={14} /></Link></div>;
 }
 
 function HeroInspired() {
-  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&color=00351f&bgcolor=ffffff&data=https%3A%2F%2Fjammakxeewal.sn%2Finscription';
-
-  return <section className="hero-inspiration relative min-h-[calc(100svh-76px)] overflow-hidden text-brand-950">
-    <img src="/hero-thies.png" alt="Esplanade citoyenne de Thiès-Nord" className="absolute inset-0 h-full w-full object-cover object-center opacity-80" />
-    <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#f4f4f1]/95 via-[#f4f4f1]/48 to-transparent" />
-    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#14261d]/20 via-transparent to-white/10" />
+  return <section className="home-hero relative min-h-[calc(100svh-76px)] overflow-hidden bg-[#003d25] text-white">
     <div className="pointer-events-none absolute -left-24 top-24 h-72 w-72 rounded-full bg-sun-400/25 blur-3xl" />
-    <div className="pointer-events-none absolute -right-20 bottom-20 h-96 w-96 rounded-full bg-white/20 blur-3xl" />
+    <div className="pointer-events-none absolute -right-20 bottom-20 h-96 w-96 rounded-full bg-brand-500/15 blur-3xl" />
 
-    <div className="relative mx-auto flex min-h-[calc(100svh-76px)] max-w-[1500px] items-center px-5 pb-20 pt-16 sm:px-8 lg:px-14">
-      <div className="relative z-10 mx-auto w-full max-w-4xl text-center">
-        <h1 className="display-title reveal-up reveal-up-delay-1 mt-7 text-[3rem] font-black leading-[.86] tracking-[-.09em] sm:text-6xl lg:text-[6.4rem]">
-          Écouter les<br />
-          <span className="text-brand-950">besoins du quartier</span><br />
-          <span className="text-brand-950">Construire ensemble</span>
-        </h1>
-        <div className="reveal-up reveal-up-delay-3 mx-auto mt-8 flex w-full max-w-3xl flex-col gap-3 bg-brand-950 p-3 text-left text-white shadow-2xl shadow-brand-950/20 sm:flex-row sm:items-center sm:justify-between sm:p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Link href="/inscription" className="group inline-flex items-center gap-2 rounded-full bg-sun-500 px-4 py-3 text-xs font-extrabold text-brand-950 transition hover:-translate-y-0.5 hover:bg-sun-400 sm:px-5">
-              Rejoindre le mouvement <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-950 text-sun-400 transition group-hover:translate-x-1"><ArrowRight size={12} /></span>
-            </Link>
-            <Link href="#manifeste" className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-3 text-xs font-extrabold text-white transition hover:bg-white/10 sm:px-5">
-              Notre approche <ArrowDownRight size={14} />
-            </Link>
-          </div>
-          <div className="flex shrink-0 items-center gap-2 border-t border-white/15 pt-3 sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
-            <img src={qrUrl} alt="QR code pour rejoindre le mouvement" className="h-12 w-12 rounded-md bg-white p-1" />
-            <div><p className="text-[10px] font-black uppercase tracking-[.14em] text-sun-400">Rejoignez-nous</p><p className="mt-1 text-[10px] text-white/60">Scannez · 1 minute</p></div>
-          </div>
-        </div>
+    <div className="relative mx-auto grid min-h-[calc(100svh-68px)] max-w-7xl items-start gap-8 px-4 pb-12 pt-7 sm:min-h-[calc(100svh-76px)] sm:gap-10 sm:px-8 sm:pb-20 sm:pt-8 lg:grid-cols-[minmax(0,1fr)_310px] lg:gap-14 lg:px-16 lg:pb-24 lg:pt-8">
+      <div className="relative z-10 max-w-3xl text-center lg:pt-0 lg:text-left">
+        <p className="reveal-up flex items-center justify-center gap-3 text-xs font-extrabold uppercase tracking-[.22em] text-sun-400 lg:justify-start"><span className="h-px w-9 bg-sun-400" /> Le mouvement de Thiès-Nord</p>
+        <h1 className="display-title reveal-up reveal-up-delay-1 mt-6 text-[3.35rem] font-black leading-[.9] tracking-[-.08em] text-white sm:text-6xl lg:text-[4.45rem]">Écouter les besoins,<br /><span className="text-sun-400">Construire<br />Ensemble.</span></h1>
+        <p className="reveal-up reveal-up-delay-2 mt-7 max-w-2xl text-base leading-7 text-white/70 sm:text-lg lg:max-w-xl">JÀMM AK XÉEWAL n’est pas qu’une idée, c’est <strong className="text-white">une force en action sur le terrain</strong>. Rejoignez des citoyens engagés pour transformer notre quartier, rue par rue.</p>
+        <div className="reveal-up reveal-up-delay-3 mt-8 flex flex-wrap justify-center gap-3 lg:justify-start"><Link href="/mouvement" className="inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-sun-500 to-yellow-400 px-5 py-3.5 text-xs font-black uppercase tracking-wider text-brand-950 shadow-lg shadow-sun-500/25 transition hover:-translate-y-1">Notre vision <ArrowRight size={16} /></Link><Link href="/idee" className="inline-flex items-center gap-3 rounded-full border border-white/25 bg-white/10 px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-white backdrop-blur-sm transition hover:-translate-y-1 hover:bg-white/15"><Lightbulb size={15} className="text-sun-400" /> J’ai une idée</Link></div>
+        <div className="reveal-up reveal-up-delay-3 mt-8 max-w-2xl rounded-[1.5rem] border border-white/20 bg-white/10 p-4 shadow-2xl backdrop-blur-xl sm:mt-10 sm:rounded-[1.75rem] sm:p-5"><div className="grid grid-cols-3 gap-2 sm:gap-7"><ImpactStat value="500+" label="citoyens actifs" /><ImpactStat value="15" label="quartiers" /><ImpactStat value="32" label="actions réalisées" /></div></div>
       </div>
-    </div>
-
-    <div className="absolute inset-x-0 bottom-0 overflow-hidden border-t-4 border-brand-950 bg-white py-3 text-brand-950">
-      <div className="marquee-track flex w-max items-center gap-7 whitespace-nowrap text-2xl font-black uppercase tracking-[-.04em] sm:text-4xl">
-        <span>Écouter</span><span className="text-sun-500">✦</span><span>Relier</span><span className="text-sun-500">✦</span><span>Agir</span><span className="text-sun-500">✦</span><span>Thiès-Nord</span><span className="text-sun-500">✦</span><span>Construire ensemble</span><span className="text-sun-500">✦</span>
-        <span>Écouter</span><span className="text-sun-500">✦</span><span>Relier</span><span className="text-sun-500">✦</span><span>Agir</span><span className="text-sun-500">✦</span><span>Thiès-Nord</span><span className="text-sun-500">✦</span><span>Construire ensemble</span><span className="text-sun-500">✦</span>
-      </div>
+      <div className="relative z-10 mx-auto w-full max-w-[310px] lg:mx-0 lg:pt-16"><div className="absolute -inset-3 rounded-[3rem] bg-sun-400/20 blur-2xl" /><QrCard /></div>
     </div>
   </section>;
 }
 
 function PresidentMessage() {
-  return <section id="mot-du-president" className="bg-[#edf6eb] px-5 py-16 sm:py-20 lg:px-8 lg:py-28">
+  return <section id="mot-du-president" className="bg-[#edf6eb] px-5 py-10 sm:py-14 lg:px-8 lg:py-16">
     <div className="mx-auto grid max-w-7xl overflow-hidden bg-brand-950 shadow-[0_30px_80px_rgba(20,38,29,.18)] lg:grid-cols-2">
-      <div className="relative min-h-[420px] overflow-hidden sm:min-h-[540px] lg:min-h-[680px]">
-        <img src="/image%20hero/image%20copy%206.png" alt="Des citoyens engagés sur le terrain" className="absolute inset-0 h-full w-full object-cover transition duration-700 hover:scale-105" />
+      <div className="relative min-h-[360px] overflow-hidden sm:min-h-[440px] lg:min-h-[540px]">
+        <img src="/image%20hero/president.png" alt="Le président du mouvement JÀMM AK XÉEWAL" className="absolute inset-0 h-full w-full object-cover object-top transition duration-700 hover:scale-105" />
         <div className="absolute inset-0 bg-gradient-to-t from-brand-950/70 via-transparent to-transparent" />
-        <div className="absolute bottom-6 left-6 rounded-full border border-white/30 bg-brand-950/55 px-4 py-2 text-[10px] font-black uppercase tracking-[.2em] text-white backdrop-blur-md sm:bottom-8 sm:left-8">JÀMM AK XÉEWAL · Sur le terrain</div>
+        <div className="absolute bottom-5 left-5 rounded-full border border-white/30 bg-brand-950/55 px-3 py-1.5 text-[10px] font-black uppercase tracking-[.2em] text-white backdrop-blur-md sm:bottom-6 sm:left-6">JÀMM AK XÉEWAL · Sur le terrain</div>
       </div>
-      <div className="relative flex flex-col justify-center p-8 text-white sm:p-12 lg:p-16">
+      <div className="relative flex flex-col justify-center p-7 text-white sm:p-9 lg:p-11">
         <span className="pointer-events-none absolute right-8 top-3 text-[9rem] font-black leading-none text-brand-600/20">“</span>
         <div className="relative">
           <p className="eyebrow flex items-center gap-3 text-sun-400"><span className="h-px w-12 bg-sun-400" /> Le mot du mouvement</p>
-          <h2 className="display-title mt-7 max-w-xl text-4xl font-black leading-[.98] sm:text-5xl lg:text-[4.2rem]">Ensemble, bâtissons<br /><span className="text-brand-500">le Thiès-Nord de demain</span></h2>
-          <div className="mt-9 max-w-xl space-y-5 text-base leading-7 text-white/65 sm:text-lg">
+          <h2 className="display-title mt-5 max-w-xl text-4xl font-black leading-[.98] sm:text-5xl lg:text-[3.35rem]">Ensemble, bâtissons<br /><span className="text-brand-500">le Thiès-Nord de demain</span></h2>
+          <div className="mt-6 max-w-xl space-y-3 text-sm leading-6 text-white/65 sm:text-base">
             <p>« Chères citoyennes, chers citoyens de Thiès-Nord,</p>
             <p>Notre localité regorge de talents, de ressources et d’une jeunesse dynamique. Le mouvement JÀMM AK XÉEWAL est votre outil. Il n’est pas conçu pour faire des promesses, mais pour bâtir avec vous.</p>
             <p>Chaque idée que vous proposez, chaque problème que vous signalez, constitue la brique de notre futur programme.</p>
             <p className="font-bold text-white">Agissons ensemble, dans la paix et pour la prospérité de tous. »</p>
           </div>
-          <div className="mt-10 flex items-center gap-4 border-t border-white/15 pt-7">
-            <span className="flex h-16 w-16 items-center justify-center bg-sun-500 text-3xl font-black italic text-brand-950">Jà</span>
+          <div className="mt-7 flex items-center gap-3 border-t border-white/15 pt-5">
+            <span className="flex h-12 w-12 items-center justify-center bg-sun-500 text-2xl font-black italic text-brand-950">Jà</span>
             <div><p className="text-xl font-extrabold">Le mouvement</p><p className="mt-1 text-xs font-black uppercase tracking-[.16em] text-sun-400">JÀMM AK XÉEWAL</p></div>
           </div>
         </div>
@@ -140,4 +113,4 @@ function Closing() {
 
 function Principle({ number, title, text }: { number: string; title: string; text: string }) { return <div><p className="text-xs font-extrabold text-brand-500">{number}</p><h3 className="mt-3 font-extrabold text-brand-900">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-500">{text}</p></div>; }
 function ImpactStat({ value, label }: { value: string; label: string }) { return <div><p className="text-3xl font-extrabold text-sun-400">{value}</p><p className="mt-1 text-xs font-bold uppercase tracking-wider text-white/40">{label}</p></div>; }
-function ActionCard({ number, icon, title, text, href, tone }: { number: string; icon: React.ReactNode; title: string; text: string; href: string; tone: 'light' | 'dark' | 'accent' }) { const classes = tone === 'dark' ? 'bg-brand-900 text-white' : tone === 'accent' ? 'bg-sun-500 text-brand-950' : 'bg-white text-brand-900 border border-slate-200'; return <Link href={href} className={`group relative flex min-h-[320px] flex-col overflow-hidden rounded-[2rem] p-7 transition duration-500 hover:-translate-y-2 hover:shadow-soft sm:p-8 ${classes}`}><span className={`text-xs font-extrabold ${tone === 'dark' ? 'text-sun-400' : tone === 'accent' ? 'text-brand-950/45' : 'text-brand-500'}`}>{number}</span><div className={`mt-10 flex h-12 w-12 items-center justify-center rounded-2xl ${tone === 'dark' ? 'bg-white/10 text-sun-400' : tone === 'accent' ? 'bg-brand-950 text-sun-400' : 'bg-brand-100 text-brand-600'}`}>{icon}</div><h3 className="mt-7 text-2xl font-extrabold tracking-tight">{title}</h3><p className={`mt-3 max-w-xs text-sm leading-6 ${tone === 'dark' ? 'text-white/55' : tone === 'accent' ? 'text-brand-950/65' : 'text-slate-500'}`}>{text}</p><span className="absolute bottom-7 right-7 flex h-9 w-9 items-center justify-center rounded-full border border-current/20 transition group-hover:rotate-45"><ArrowRight size={15} /></span></Link>; }
+function ActionCard({ number, icon, title, text, href, tone }: { number: string; icon: React.ReactNode; title: string; text: string; href: string; tone: 'light' | 'dark' | 'accent' }) { const classes = tone === 'dark' ? 'bg-brand-900 text-white' : tone === 'accent' ? 'bg-sun-500 text-brand-950' : 'bg-white text-brand-900 border border-slate-200'; return <Link href={href} className={`group relative flex min-h-[240px] flex-col overflow-hidden rounded-[1.5rem] p-6 transition duration-500 hover:-translate-y-2 hover:shadow-soft sm:min-h-[320px] sm:rounded-[2rem] sm:p-8 ${classes}`}><span className={`text-xs font-extrabold ${tone === 'dark' ? 'text-sun-400' : tone === 'accent' ? 'text-brand-950/45' : 'text-brand-500'}`}>{number}</span><div className={`mt-8 flex h-12 w-12 items-center justify-center rounded-2xl sm:mt-10 ${tone === 'dark' ? 'bg-white/10 text-sun-400' : tone === 'accent' ? 'bg-brand-950 text-sun-400' : 'bg-brand-100 text-brand-600'}`}>{icon}</div><h3 className="mt-5 text-2xl font-extrabold tracking-tight sm:mt-7">{title}</h3><p className={`mt-3 max-w-xs text-sm leading-6 ${tone === 'dark' ? 'text-white/55' : tone === 'accent' ? 'text-brand-950/65' : 'text-slate-500'}`}>{text}</p><span className="absolute bottom-6 right-6 flex h-9 w-9 items-center justify-center rounded-full border border-current/20 transition group-hover:rotate-45 sm:bottom-7 sm:right-7"><ArrowRight size={15} /></span></Link>; }
