@@ -22,12 +22,6 @@ export const activities = [
   },
 ];
 
-export const events = [
-  { day: '12', weekday: 'Mar', title: 'Causerie citoyenne', time: '16h00 — 18h00', place: 'Quartier Nguinth', featured: true },
-  { day: '14', weekday: 'Jeu', title: 'Rencontre Artisanat', time: '10h00 — 13h00', place: 'Diakhao' },
-  { day: '16', weekday: 'Sam', title: 'Tournoi de Football de la Fraternité', time: '15h00 — 18h00', place: 'Stade Maniang Soumaré' },
-];
-
 export const navLinks = [
   { href: '/', label: 'Accueil' },
   { href: '/mouvement', label: 'Le mouvement' },

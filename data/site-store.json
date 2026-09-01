@@ -1,0 +1,24 @@
+{
+  "events": [],
+  "members": [
+    {
+      "firstName": "Abdoulaye",
+      "lastName": "DIALLO",
+      "email": "adhesion@gmail.com",
+      "neighborhood": "Nguinth",
+      "phone": "+221771233456",
+      "id": "c7bfc69c-951b-4047-be57-70be3a7df77a",
+      "createdAt": "2026-09-01T12:48:42.963Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "00b99b29-e49c-443f-8c43-73a6c91e54ca",
+      "type": "member",
+      "title": "Nouvelle adhésion",
+      "message": "Abdoulaye DIALLO vient de rejoindre le mouvement.",
+      "createdAt": "2026-09-01T12:48:42.963Z",
+      "read": true
+    }
+  ]
+}

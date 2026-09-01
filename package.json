@@ -6,12 +6,18 @@
     "dev": "rm -rf .next-dev && next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:migrate": "tsx scripts/run-neon-migrations.ts",
+    "db:migrate-json": "tsx scripts/migrate-json-to-neon.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "drizzle-orm": "^0.45.2",
     "lucide-react": "^0.468.0",
     "next": "^14.2.15",
     "react": "^18.3.1",
@@ -19,6 +25,7 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.19",
+    "drizzle-kit": "^0.31.10",
     "postcss": "^8.4.40",
     "tailwindcss": "^3.4.10",
     "typescript": "^5.5.4"
