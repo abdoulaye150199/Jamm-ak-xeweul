@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowDownRight, ArrowRight, CalendarDays, Check, ChevronRight, Clock3, HeartHandshake, Lightbulb, MapPin, Megaphone, MoveUpRight, QrCode, Quote, Sparkles, Users } from 'lucide-react';
+import { ArrowDownRight, ArrowRight, CalendarDays, Check, ChevronRight, Clock3, Lightbulb, MapPin, Megaphone, QrCode, Quote, Sparkles, Users } from 'lucide-react';
 import { ActivitySlider, ChatWidget, Footer, PublicHeader } from '@/components/site';
 import { getAdminSnapshot, getEvents, type StoredEvent } from '@/lib/site-store';
 

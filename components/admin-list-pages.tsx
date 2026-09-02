@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Activity, ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, FileText, Plus, Search, Users } from 'lucide-react';
+import { ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, FileText, Plus, Search, Users } from 'lucide-react';
 import {
   AdminSidebar,
   AdminTopbar,
@@ -58,7 +58,7 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
   const [totalItems, setTotalItems] = useState(0);
   const pageSize = 8;
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     try {
       const section = kind === 'membres' ? 'members' : kind === 'activites' ? 'events' : 'contributions';
       const response = await fetch(`/api/admin/dashboard?section=${section}&page=${page}&pageSize=${pageSize}&q=${encodeURIComponent(query)}`, { cache: 'no-store' });
@@ -73,14 +73,14 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
     } catch {
       setLoadError('Les données sont momentanément indisponibles.');
     }
-  }
+  }, [kind, page, query]);
 
   useEffect(() => {
     refresh();
     if (!autoRefresh) return;
     const interval = window.setInterval(refresh, 10000);
     return () => window.clearInterval(interval);
-  }, [autoRefresh, kind, page, query]);
+  }, [autoRefresh, refresh]);
 
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const currentPage = Math.min(page, totalPages);
