@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail, UserRound } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Eye, EyeOff, LockKeyhole, Mail, MapPin, Phone, UserRound } from 'lucide-react';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
@@ -43,8 +43,19 @@ export function LoginForm() {
   </form>;
 }
 
+function Field({ label, icon, children, className = '' }: { label: string; icon: React.ReactNode; children: React.ReactNode; className?: string }) {
+  return <label className={`block ${className}`}>
+    <span className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-[.12em] text-slate-500">{label}</span>
+    <span className="relative block">
+      <span className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-brand-500">{icon}</span>
+      {children}
+    </span>
+  </label>;
+}
+
 export function JoinForm() {
   const [submitted, setSubmitted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -79,17 +90,54 @@ export function JoinForm() {
     }
   }
 
-  if (submitted) return <div className="rounded-2xl border border-brand-200 bg-brand-50 p-5 text-sm leading-6 text-brand-700"><div className="mb-2 flex items-center gap-2 font-extrabold"><Check size={18} /> Bienvenue dans le mouvement !</div><p>Votre compte a été créé et votre session est ouverte.</p><Link href="/espace-membre" className="mt-3 inline-flex font-bold underline">Ouvrir mon espace</Link></div>;
+  if (submitted) return <div className="rounded-[1.5rem] border border-brand-200 bg-brand-50 p-6 text-brand-900">
+    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-600 text-white"><Check size={22} strokeWidth={3} /></div>
+    <h3 className="mt-5 text-xl font-extrabold">Bienvenue dans le mouvement !</h3>
+    <p className="mt-2 text-sm leading-6 text-brand-900/65">Votre compte a été créé et votre session est ouverte. Vous pouvez maintenant suivre vos contributions.</p>
+    <Link href="/espace-membre" className="btn-primary mt-5 w-full">Ouvrir mon espace <ArrowRight size={16} /></Link>
+  </div>;
 
-  return <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-    <label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Prénom</span><span className="relative block"><UserRound size={17} className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400" /><input name="firstName" required maxLength={100} className="input-focus !pl-12" placeholder="Votre prénom" /></span></label>
-    <label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Nom</span><input name="lastName" required maxLength={100} className="input-focus" placeholder="Votre nom" /></label>
-    <label className="block sm:col-span-2"><span className="mb-2 block text-sm font-bold text-slate-700">Adresse e-mail</span><span className="relative block"><Mail size={17} className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400" /><input name="email" required type="email" maxLength={255} autoComplete="email" className="input-focus !pl-12" placeholder="vous@exemple.sn" /></span></label>
-    <label className="block sm:col-span-2"><span className="mb-2 block text-sm font-bold text-slate-700">Quartier</span><select name="neighborhood" required className="input-focus"><option value="">Choisir votre quartier</option><option>Nguinth</option><option>Diakhao</option><option>Keur Mame El Hadj</option><option>Autre quartier de Thiès-Nord</option></select></label>
-    <label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Téléphone</span><input name="phone" required maxLength={40} autoComplete="tel" className="input-focus" placeholder="Votre numéro de téléphone" /></label>
-    <label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Mot de passe</span><input name="password" required minLength={8} maxLength={128} type="password" autoComplete="new-password" className="input-focus" placeholder="8 caractères minimum" /></label>
-    <label className="flex items-start gap-2 pt-1 text-xs leading-5 text-slate-500 sm:col-span-2"><input required type="checkbox" className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600" /> J’accepte la charte citoyenne et la politique de confidentialité.</label>
-    {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-600 sm:col-span-2">{error}</p>}
-    <button disabled={loading} className="btn-primary sm:col-span-2 disabled:cursor-not-allowed disabled:opacity-60">{loading ? 'Enregistrement…' : 'Créer mon espace'} {!loading && <ArrowRight size={16} />}</button>
+  return <form onSubmit={submit} className="grid gap-2.5 sm:grid-cols-2 lg:gap-2">
+    <Field label="Prénom" icon={<UserRound size={17} />}>
+      <input name="firstName" required maxLength={100} autoComplete="given-name" className="input-focus !min-h-11 !pl-12" placeholder="Votre prénom" />
+    </Field>
+    <Field label="Nom" icon={<UserRound size={17} />}>
+      <input name="lastName" required maxLength={100} autoComplete="family-name" className="input-focus !min-h-11 !pl-12" placeholder="Votre nom" />
+    </Field>
+    <Field label="Adresse e-mail" icon={<Mail size={17} />} className="sm:col-span-2">
+      <input name="email" required type="email" maxLength={255} autoComplete="email" className="input-focus !min-h-11 !pl-12" placeholder="vous@exemple.sn" />
+    </Field>
+    <Field label="Quartier" icon={<MapPin size={17} />} className="sm:col-span-2">
+      <select name="neighborhood" required defaultValue="" className="input-focus !min-h-11 !cursor-pointer !appearance-none !pl-12 !pr-11">
+        <option value="" disabled>Choisir votre quartier</option>
+        <option>Nguinth</option>
+        <option>Diakhao</option>
+        <option>Keur Mame El Hadj</option>
+        <option>Autre quartier de Thiès-Nord</option>
+      </select>
+      <ChevronDown size={17} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+    </Field>
+    <Field label="Téléphone" icon={<Phone size={17} />}>
+      <input name="phone" required type="tel" maxLength={40} autoComplete="tel" className="input-focus !min-h-11 !pl-12" placeholder="77 000 00 00" />
+    </Field>
+    <Field label="Mot de passe" icon={<LockKeyhole size={17} />}>
+      <input name="password" required minLength={8} maxLength={128} type={showPassword ? 'text' : 'password'} autoComplete="new-password" className="input-focus !min-h-11 !pl-12 !pr-12" placeholder="8 caractères minimum" />
+      <button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'} className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-slate-400 transition hover:text-brand-600">
+        {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+      </button>
+    </Field>
+
+    <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-2.5 text-[11px] leading-4 text-slate-600 sm:col-span-2">
+      <input required type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 accent-brand-600" />
+      <span>J’accepte la charte et la politique de confidentialité.</span>
+    </label>
+    {error && <p role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-600 sm:col-span-2">{error}</p>}
+    <div className="space-y-3 sm:col-span-2">
+      <div className="flex justify-center">
+        <button disabled={loading} className="btn-primary w-full max-w-[360px] rounded-2xl py-3 disabled:cursor-not-allowed disabled:opacity-60">
+          {loading ? 'Création…' : 'Créer mon espace'} {!loading && <ArrowRight size={16} />}
+        </button>
+      </div>
+    </div>
   </form>;
 }

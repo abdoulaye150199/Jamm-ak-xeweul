@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, FileText, Plus, Search, Users } from 'lucide-react';
 import {
   AdminSidebar,
   AdminTopbar,
+  NewEventPage,
   NotificationsPanel,
   SettingsModal,
   Status,
@@ -55,6 +56,8 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [memberAlerts, setMemberAlerts] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [eventOpen, setEventOpen] = useState(false);
+  const [flash, setFlash] = useState('');
   const [totalItems, setTotalItems] = useState(0);
   const pageSize = 8;
 
@@ -100,6 +103,30 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
     await fetch('/api/admin/notifications', { method: 'POST' });
   }
 
+  async function publishEvent(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const response = await fetch('/api/admin/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: formData.get('date'),
+        title: formData.get('title'),
+        time: formData.get('time'),
+        place: formData.get('place'),
+        featured: formData.get('featured') === 'on',
+      }),
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      setFlash(data?.error ?? 'Impossible de publier cette activité.');
+      return;
+    }
+    setEventOpen(false);
+    setFlash('L’activité est publiée et visible dans l’agenda.');
+    await refresh();
+  }
+
   const visibleContributions = contributions;
   const visibleMembers = members;
   const visibleEvents = events;
@@ -113,19 +140,20 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="eyebrow text-brand-600">{config.eyebrow}</p><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{config.title}</h1><p className="mt-2 max-w-2xl text-sm text-slate-500 sm:text-base">{config.description}</p></div>
           <div className="flex flex-wrap gap-2">
-            {kind === 'activites' && <Link href="/admin" className="btn-primary !rounded-xl !bg-brand-900"><Plus size={17} /> Ouvrir le tableau</Link>}
+            {kind === 'activites' && <button onClick={() => { setFlash(''); setEventOpen(true); }} className="btn-primary !rounded-xl !bg-brand-900"><Plus size={17} /> Nouvelle activité</button>}
             <Link href="/admin" className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold shadow-sm transition hover:border-brand-300 hover:bg-brand-50"><ArrowUpRight size={16} /> Vue d’ensemble</Link>
           </div>
         </div>
 
-        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-card">
+        {flash && <div className="mb-5 flex items-center justify-between rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-bold text-brand-700"><span>{flash}</span><button onClick={() => setFlash('')} aria-label="Fermer le message">×</button></div>}
+        {eventOpen ? <NewEventPage backLabel="Retour aux activités" onClose={() => setEventOpen(false)} onSubmit={publishEvent} /> : <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-card">
           <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"><div><p className="text-sm font-bold text-slate-500">{totalItems} élément{totalItems > 1 ? 's' : ''}</p><p className="mt-1 text-xs text-slate-400">La liste se met à jour automatiquement.</p></div><label className="relative block w-full sm:max-w-sm"><Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={`Rechercher ${kind === 'contributions' ? 'une contribution' : kind === 'membres' ? 'un membre' : 'une activité'}`} className="input-focus !min-h-11 !rounded-xl !py-2.5 !pl-10" /></label></div>
           {kind === 'contributions' && <ContributionList items={visibleContributions} empty={config.empty} />}
           {kind === 'membres' && <MemberList items={visibleMembers} empty={config.empty} />}
           {kind === 'activites' && <EventList items={visibleEvents} empty={config.empty} />}
           {loadError && <p role="alert" className="border-t border-red-100 bg-red-50 px-5 py-3 text-sm font-bold text-red-600">{loadError}</p>}
           <Pagination page={currentPage} totalPages={totalPages} onChange={setPage} />
-        </section>
+        </section>}
       </main>
     </div>
     {settingsOpen && <SettingsModal autoRefresh={autoRefresh} memberAlerts={memberAlerts} onClose={() => setSettingsOpen(false)} onSave={(nextAutoRefresh, nextMemberAlerts) => { setAutoRefresh(nextAutoRefresh); setMemberAlerts(nextMemberAlerts); setSettingsOpen(false); }} />}

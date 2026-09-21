@@ -5,6 +5,12 @@ import { addMember } from '@/lib/site-store';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function isUniqueConstraintError(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as { code?: unknown; cause?: { code?: unknown } };
+  return candidate.code === '23505' || candidate.cause?.code === '23505';
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -40,7 +46,14 @@ export async function POST(request: Request) {
       secure: process.env.NODE_ENV === 'production',
     });
     return response;
-  } catch {
+  } catch (error) {
+    const databaseError = error as { code?: unknown; cause?: { code?: unknown; constraint?: unknown } };
+    const errorCode = databaseError.code ?? databaseError.cause?.code;
+    const constraint = databaseError.cause?.constraint;
+    console.error('Member registration failed:', { code: errorCode, constraint });
+    if (errorCode === '23505' || isUniqueConstraintError(error)) {
+      return NextResponse.json({ error: 'Cette adresse e-mail est déjà utilisée.' }, { status: 409 });
+    }
     return NextResponse.json({ error: 'Impossible d’enregistrer votre adhésion.' }, { status: 500 });
   }
 }

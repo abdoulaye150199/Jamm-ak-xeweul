@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { ArrowUpRight, CalendarDays, Flag, Home, Mail, Phone, UserRound, UsersRound } from 'lucide-react';
+import { ArrowUpRight, CalendarDays, Facebook, Flag, Home, Mail, MessageCircle, Phone, UserRound, UsersRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { navLinks } from '@/lib/data';
 
@@ -21,7 +21,20 @@ export function PublicHeader() {
 
   return <>
     <header className="sticky top-0 z-40 border-b border-[#dfe3d8]/80 bg-[#f4f4f1]/85 backdrop-blur-xl">
-      <div className="hidden"><div className="mx-auto flex h-9 max-w-7xl items-center justify-between px-5 text-[11px] font-bold tracking-wide lg:px-8"><div className="flex items-center gap-6"><span className="flex items-center gap-2"><Phone size={13} className="text-brand-500" /> +221 77 123 45 67</span><span className="flex items-center gap-2"><Mail size={13} className="text-brand-500" /> contact@jammakxeewal.sn</span></div><span className="uppercase tracking-[.18em] text-white/40">Thiès-Nord · Construire ensemble</span></div></div>
+      <div className="hidden bg-brand-950 text-white lg:block">
+        <div className="mx-auto flex h-12 max-w-7xl items-center justify-between px-5 text-[11px] font-bold tracking-wide lg:px-8">
+          <div className="flex items-center gap-6">
+            <span className="flex items-center gap-2"><Phone size={13} className="text-brand-500" /> +221 77 000 00 00</span>
+            <span className="flex items-center gap-2"><Mail size={13} className="text-brand-500" /> contact@jammakxeewal.com</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="mr-1 uppercase tracking-[.18em] text-white/65">Rejoignez-nous :</span>
+            <a href="#" aria-label="WhatsApp" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0b7f4f] transition hover:bg-[#10a968]"><MessageCircle size={15} /></a>
+            <a href="#" aria-label="Facebook" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#07558d] transition hover:bg-[#0b70b8]"><Facebook size={15} /></a>
+            <a href="#" aria-label="TikTok" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#273b56] text-xs font-black transition hover:bg-[#3e5879]">♪</a>
+          </div>
+        </div>
+      </div>
       <HeaderProgress />
       <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between gap-3 px-4 sm:h-[76px] sm:px-5 lg:h-[82px] lg:px-8">
         <HeaderLogo />

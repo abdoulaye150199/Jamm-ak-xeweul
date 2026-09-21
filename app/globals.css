@@ -28,7 +28,7 @@ header.sticky ~ main { padding-top: 68px; }
   header.sticky ~ main { padding-top: 76px; }
 }
 @media (min-width: 1024px) {
-  header.sticky ~ main { padding-top: 82px; }
+  header.sticky ~ main { padding-top: 130px; }
 }
 @media (max-width: 1023px) {
   header.sticky ~ main { padding-bottom: 86px; }
