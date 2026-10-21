@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isBackendConfigured, proxyToBackend } from '@/lib/backend-client';
 import { MEMBER_SESSION_COOKIE, getMemberIdFromSession } from '@/lib/member-auth';
-import { addContribution } from '@/lib/site-store';
+import { addContribution, getMemberById } from '@/lib/site-store';
 import { cookies } from 'next/headers';
 import { hasRequiredStrings, readJsonObject } from '@/lib/request-validation';
 import { getContributionImageError } from '@/lib/contribution-image';
@@ -24,6 +24,11 @@ export async function POST(request: Request) {
     const imageError = getContributionImageError(body.image);
     if (imageError) return NextResponse.json({ error: imageError }, { status: 400 });
 
+    const memberId = getMemberIdFromSession((await cookies()).get(MEMBER_SESSION_COOKIE)?.value);
+    if (memberId && !await getMemberById(memberId)) {
+      return NextResponse.json({ error: 'Ce compte membre n’est plus disponible. Veuillez vous reconnecter.' }, { status: 401 });
+    }
+
     const contribution = await addContribution({
       title: body.title.trim(),
       author: body.author.trim(),
@@ -32,7 +37,7 @@ export async function POST(request: Request) {
       description: body.description.trim(),
       phone: body.phone.trim(),
       image: typeof body.image === 'string' ? body.image : null,
-      memberId: getMemberIdFromSession((await cookies()).get(MEMBER_SESSION_COOKIE)?.value),
+      memberId,
     });
     return NextResponse.json({ ok: true, contribution: { id: contribution.id } }, { status: 201 });
   } catch {

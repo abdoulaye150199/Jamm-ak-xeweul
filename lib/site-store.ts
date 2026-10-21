@@ -236,6 +236,42 @@ export async function getMemberById(id: string) {
   return member ? mapMember(member) : null;
 }
 
+export async function getAdminMemberDetails(id: string) {
+  const member = await getMemberById(id);
+  if (!member) return null;
+  const db = getDb();
+  const [recentContributions, [totals]] = await readDatabase(() => Promise.all([
+    db.select({
+      id: contributions.id,
+      title: contributions.title,
+      type: contributions.type,
+      status: contributions.status,
+      description: contributions.description,
+      createdAt: contributions.createdAt,
+    }).from(contributions).where(eq(contributions.memberId, id)).orderBy(desc(contributions.createdAt)).limit(10),
+    db.select({ total: count(), ideas: sql<number>`count(*) filter (where ${contributions.type} = 'Idée')` })
+      .from(contributions).where(eq(contributions.memberId, id)),
+  ]));
+  return {
+    member,
+    contributions: recentContributions.map(row => ({ ...row, createdAt: toIso(row.createdAt) })),
+    contributionCount: Number(totals.total),
+    ideaCount: Number(totals.ideas),
+  };
+}
+
+export async function deleteMember(id: string) {
+  return getDb().transaction(async tx => {
+    const [member] = await tx.select({ id: members.id }).from(members).where(eq(members.id, id)).for('update');
+    if (!member) return null;
+    // Keep community reports while removing their link to the deleted account.
+    await tx.update(contributions).set({ memberId: null }).where(eq(contributions.memberId, id));
+    await tx.delete(notifications).where(eq(notifications.memberId, id));
+    await tx.delete(members).where(eq(members.id, id));
+    return member;
+  });
+}
+
 export async function getMemberContributions(memberId: string) {
   const rows = await readDatabase(() => getDb().select().from(contributions).where(eq(contributions.memberId, memberId)).orderBy(desc(contributions.createdAt)));
   return rows.map(mapContribution);

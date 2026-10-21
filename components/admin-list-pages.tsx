@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowUpRight, CalendarDays, Check, ChevronLeft, ChevronRight, FileText, Plus, Search, Users } from 'lucide-react';
+import { ArrowUpRight, CalendarDays, Check, ChevronLeft, ChevronRight, Eye, FileText, Plus, Search, Trash2, Users } from 'lucide-react';
 import {
   AdminSidebar,
   AdminTopbar,
@@ -14,6 +14,7 @@ import {
 } from '@/components/admin-dashboard';
 import type { Contribution, DashboardEvent, DashboardMember, DashboardNotification } from '@/components/admin/types';
 import { formatRelativeDate } from '@/lib/format';
+import { DeleteMemberDialog, MemberDetailsDialog } from '@/components/admin/member-dialogs';
 
 type ListKind = 'contributions' | 'membres' | 'activites';
 
@@ -60,6 +61,10 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
   const [flash, setFlash] = useState('');
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [totalItems, setTotalItems] = useState(0);
+  const [viewingMember, setViewingMember] = useState<DashboardMember | null>(null);
+  const [deletingMember, setDeletingMember] = useState<DashboardMember | null>(null);
+  const [memberDeletionBusy, setMemberDeletionBusy] = useState(false);
+  const [memberDeletionError, setMemberDeletionError] = useState('');
   const pageSize = 8;
 
   const refresh = useCallback(async () => {
@@ -72,6 +77,8 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
       if (kind === 'membres') setMembers(data.items ?? []);
       if (kind === 'activites') setEvents(data.items ?? []);
       setTotalItems(data.total ?? 0);
+      const lastPage = Math.max(1, Math.ceil((data.total ?? 0) / pageSize));
+      if (page > lastPage) setPage(lastPage);
       setNotifications(data.notifications ?? []);
       setLoadError('');
     } catch {
@@ -147,6 +154,30 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
     await refresh();
   }
 
+  function openMemberDeletion(member: DashboardMember) {
+    setViewingMember(null);
+    setMemberDeletionError('');
+    setDeletingMember(member);
+  }
+
+  async function confirmMemberDeletion() {
+    if (!deletingMember || memberDeletionBusy) return;
+    setMemberDeletionBusy(true);
+    setMemberDeletionError('');
+    try {
+      const response = await fetch(`/api/admin/members/${deletingMember.id}`, { method: 'DELETE' });
+      const data = await response.json().catch(() => null);
+      if (!response.ok && response.status !== 404) throw new Error(data?.error ?? 'Impossible de supprimer ce membre.');
+      setDeletingMember(null);
+      setFlash(response.status === 404 ? 'Ce membre a déjà été supprimé.' : `${deletingMember.firstName} ${deletingMember.lastName} a été supprimé. Ses contributions sont conservées.`);
+      await refresh();
+    } catch (reason) {
+      setMemberDeletionError(reason instanceof TypeError ? 'Erreur réseau. Le résultat de la suppression n’a pas pu être confirmé. Réessayez.' : reason instanceof Error ? reason.message : 'Impossible de supprimer ce membre. Réessayez.');
+    } finally {
+      setMemberDeletionBusy(false);
+    }
+  }
+
   const visibleContributions = contributions;
   const visibleMembers = members;
   const visibleEvents = events;
@@ -169,7 +200,7 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
         {eventOpen ? <NewEventPage backLabel="Retour aux activités" onClose={() => setEventOpen(false)} onSubmit={publishEvent} /> : <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-card">
           <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"><div><p className="text-sm font-bold text-slate-500">{totalItems} élément{totalItems > 1 ? 's' : ''}</p><p className="mt-1 text-xs text-slate-400">La liste se met à jour automatiquement.</p></div><label className="relative block w-full sm:max-w-sm"><Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={`Rechercher ${kind === 'contributions' ? 'une contribution' : kind === 'membres' ? 'un membre' : 'une activité'}`} className="input-focus !min-h-11 !rounded-xl !py-2.5 !pl-10" /></label></div>
           {kind === 'contributions' && <ContributionList items={visibleContributions} empty={config.empty} onApprove={approveContribution} approvingId={approvingId} />}
-          {kind === 'membres' && <MemberList items={visibleMembers} empty={config.empty} />}
+          {kind === 'membres' && <MemberList items={visibleMembers} empty={config.empty} onDetails={setViewingMember} onDelete={openMemberDeletion} />}
           {kind === 'activites' && <EventList items={visibleEvents} empty={config.empty} />}
           {loadError && <p role="alert" className="border-t border-red-100 bg-red-50 px-5 py-3 text-sm font-bold text-red-600">{loadError}</p>}
           <Pagination page={currentPage} totalPages={totalPages} onChange={setPage} />
@@ -177,6 +208,8 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
       </main>
     </div>
     {settingsOpen && <SettingsModal autoRefresh={autoRefresh} memberAlerts={memberAlerts} onClose={() => setSettingsOpen(false)} onSave={(nextAutoRefresh, nextMemberAlerts) => { setAutoRefresh(nextAutoRefresh); setMemberAlerts(nextMemberAlerts); setSettingsOpen(false); }} />}
+    {viewingMember && <MemberDetailsDialog key={viewingMember.id} member={viewingMember} onClose={() => setViewingMember(null)} onDelete={openMemberDeletion} />}
+    {deletingMember && <DeleteMemberDialog member={deletingMember} busy={memberDeletionBusy} error={memberDeletionError} onClose={() => { if (!memberDeletionBusy) setDeletingMember(null); }} onConfirm={confirmMemberDeletion} />}
   </div>;
 }
 
@@ -185,9 +218,15 @@ function ContributionList({ items, empty, onApprove, approvingId }: { items: Con
   return <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm"><thead className="bg-slate-50 text-[10px] uppercase tracking-[.16em] text-slate-400"><tr><th className="px-6 py-3 font-extrabold">Contribution</th><th className="px-4 py-3 font-extrabold">Type</th><th className="px-4 py-3 font-extrabold">Statut</th><th className="px-4 py-3 font-extrabold">Date</th><th className="px-4 py-3 font-extrabold">Action</th></tr></thead><tbody className="divide-y divide-slate-100">{items.map(item => <tr key={item.id} className="transition hover:bg-brand-50/40"><td className="px-6 py-4"><p className="font-bold">{item.title}</p><p className="mt-1 text-xs text-slate-400">{item.author} · {item.neighborhood}</p><p className="mt-2 max-w-xl text-xs leading-5 text-slate-500">{item.description}</p></td><td className="px-4 py-4"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">{item.type}</span></td><td className="px-4 py-4"><Status status={item.status} /></td><td className="px-4 py-4 text-xs text-slate-500">{formatRelativeDate(item.createdAt)}</td><td className="px-4 py-4">{item.status === 'Nouveau' ? <button onClick={() => onApprove(item.id)} disabled={approvingId === item.id} className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-xs font-extrabold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"><Check size={14} /> {approvingId === item.id ? 'Approbation…' : 'Approuver'}</button> : <span className="text-xs font-bold text-slate-400">Traitée</span>}</td></tr>)}</tbody></table></div>;
 }
 
-function MemberList({ items, empty }: { items: DashboardMember[]; empty: string }) {
+function MemberList({ items, empty, onDetails, onDelete }: { items: DashboardMember[]; empty: string; onDetails: (member: DashboardMember) => void; onDelete: (member: DashboardMember) => void }) {
   if (!items.length) return <EmptyList icon={<Users />} message={empty} />;
-  return <div className="divide-y divide-slate-100">{items.map(item => <div key={item.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:px-6"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-sm font-black text-brand-600">{item.firstName.charAt(0)}{item.lastName.charAt(0)}</span><div><p className="font-bold">{item.firstName} {item.lastName}</p><p className="mt-1 text-xs text-slate-400">{item.email} · {item.phone}</p></div></div><div className="text-left text-xs text-slate-500 sm:text-right"><p>{item.neighborhood}</p><p className="mt-1 font-bold text-brand-500">{formatRelativeDate(item.createdAt)}</p></div></div>)}</div>;
+  return <div className="divide-y divide-slate-100">{items.map(item => <div key={item.id} className="flex flex-col gap-4 p-5 sm:px-6 xl:flex-row xl:items-center xl:justify-between">
+    <div className="flex min-w-0 items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-black text-brand-600">{item.firstName.charAt(0)}{item.lastName.charAt(0)}</span><div className="min-w-0"><p className="break-words font-bold">{item.firstName} {item.lastName}</p><p className="mt-1 break-all text-xs text-slate-400">{item.email} · {item.phone}</p><p className="mt-2 text-xs text-slate-500">{item.neighborhood} · {formatRelativeDate(item.createdAt)}</p></div></div>
+    <div className="flex shrink-0 flex-wrap gap-2">
+      <button type="button" onClick={() => onDetails(item)} aria-label={`Voir les détails de ${item.firstName} ${item.lastName}`} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-brand-700 hover:bg-brand-50"><Eye size={15} /> Détails</button>
+      <button type="button" onClick={() => onDelete(item)} aria-label={`Supprimer ${item.firstName} ${item.lastName}`} className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100"><Trash2 size={15} /> Supprimer</button>
+    </div>
+  </div>)}</div>;
 }
 
 function EventList({ items, empty }: { items: DashboardEvent[]; empty: string }) {
