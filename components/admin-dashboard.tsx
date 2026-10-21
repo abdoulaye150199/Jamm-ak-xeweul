@@ -67,14 +67,15 @@ export function AdminDashboard() {
   }, [autoRefresh]);
 
   async function logout() {
-    await fetch('/api/admin/logout', { method: 'POST' });
+    const response = await fetch('/api/admin/logout', { method: 'POST' }).catch(() => null);
+    if (!response?.ok) { setFlash('Impossible de vous déconnecter. Réessayez.'); return; }
     router.push('/login/admin');
     router.refresh();
   }
 
   async function markNotificationsRead() {
-    setNotifications(current => current.map(notification => ({ ...notification, read: true })));
-    await fetch('/api/admin/notifications', { method: 'POST' });
+    const response = await fetch('/api/admin/notifications', { method: 'POST' }).catch(() => null);
+    if (response?.ok) setNotifications(current => current.map(notification => ({ ...notification, read: true })));
   }
 
   function exportReport() {
@@ -107,9 +108,9 @@ export function AdminDashboard() {
         place: formData.get('place'),
         featured: formData.get('featured') === 'on',
       }),
-    });
-    if (!response.ok) {
-      const data = await response.json().catch(() => null);
+    }).catch(() => null);
+    if (!response?.ok) {
+      const data = await response?.json().catch(() => null);
       setFlash(data?.error ?? 'Impossible de publier cet événement.');
       return;
     }
@@ -161,7 +162,7 @@ export function AdminTopbar({ onMenu, onNotifications, unreadCount }: { onMenu: 
 }
 
 export function NotificationsPanel({ notifications, onClose }: { notifications: DashboardNotification[]; onClose: () => void }) {
-  return <div className="fixed right-4 top-[78px] z-50 w-[min(92vw,380px)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 p-4"><div><p className="font-extrabold">Notifications</p><p className="text-xs text-slate-400">Adhésions et publications récentes</p></div><button onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100" aria-label="Fermer les notifications"><X size={17} /></button></div><div className="max-h-80 overflow-y-auto">{notifications.length ? notifications.slice(0, 8).map(notification => <div key={notification.id} className="flex gap-3 border-b border-slate-100 p-4 last:border-0"><span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${notification.type === 'member' ? 'bg-brand-500' : 'bg-sun-500'}`} /><div><p className="text-sm font-bold">{notification.title}</p><p className="mt-1 text-xs leading-5 text-slate-500">{notification.message}</p><p className="mt-1 text-[11px] text-slate-400">{formatRelativeDate(notification.createdAt)}</p></div></div>) : <p className="p-5 text-sm text-slate-500">Aucune notification pour le moment.</p>}</div></div>;
+  return <div className="fixed right-4 top-[78px] z-50 w-[min(92vw,380px)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 p-4"><div><p className="font-extrabold">Notifications</p><p className="text-xs text-slate-400">Adhésions et publications récentes</p></div><button onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100" aria-label="Fermer les notifications"><X size={17} /></button></div><div className="max-h-80 overflow-y-auto">{notifications.length ? notifications.slice(0, 8).map(notification => <div key={notification.id} className="flex gap-3 border-b border-slate-100 p-4 last:border-0"><span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${notification.type === 'member' ? 'bg-brand-500' : 'bg-sun-500'}`} /><div><p className="text-sm font-bold">{notification.title}</p><p className="mt-1 text-xs leading-5 text-slate-500">{notification.message}</p><p className="mt-1 text-[11px] text-slate-400">{formatRelativeDate(notification.createdAt)}</p>{notification.type === 'contribution' && <Link href="/admin/contributions" onClick={onClose} className="mt-2 inline-flex items-center gap-1 text-xs font-extrabold text-brand-600 hover:text-brand-700">Voir et approuver <ArrowUpRight size={13} /></Link>}</div></div>) : <p className="p-5 text-sm text-slate-500">Aucune notification pour le moment.</p>}</div></div>;
 }
 
 export function AdminSidebar({ activeSection, onNavigate, onSettings, open, onClose, onLogout }: { activeSection: string; onNavigate: (section: string) => void; onSettings: () => void; open: boolean; onClose: () => void; onLogout: () => void }) {

@@ -51,6 +51,7 @@ export const contributions = pgTable('contributions', {
   status: contributionStatusEnum('status').default('Nouveau').notNull(),
   description: text('description').notNull(),
   phone: varchar('phone', { length: 40 }).notNull(),
+  image: text('image'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   }, table => ({
     createdAtIdx: index('contributions_created_at_idx').on(table.createdAt),
@@ -60,6 +61,7 @@ export const contributions = pgTable('contributions', {
 
 export const notifications = pgTable('notifications', {
   id: uuid('id').defaultRandom().primaryKey(),
+  memberId: uuid('member_id').references(() => members.id),
   type: notificationTypeEnum('type').notNull(),
   title: text('title').notNull(),
   message: text('message').notNull(),
@@ -67,5 +69,6 @@ export const notifications = pgTable('notifications', {
   read: boolean('read').default(false).notNull(),
 }, table => ({
   createdAtIdx: index('notifications_created_at_idx').on(table.createdAt),
+  memberIdIdx: index('notifications_member_id_idx').on(table.memberId),
   readIdx: index('notifications_read_idx').on(table.read),
 }));

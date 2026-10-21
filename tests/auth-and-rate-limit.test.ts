@@ -17,6 +17,7 @@ test('creates a verifiable member session token', () => {
   const token = createMemberSessionToken('member-123');
   assert.equal(getMemberIdFromSession(token), 'member-123');
   assert.equal(getMemberIdFromSession(`${token}tampered`), null);
+  assert.equal(getMemberIdFromSession(`${token}.tampered`), null);
 });
 
 test('blocks repeated login attempts during the configured window', () => {

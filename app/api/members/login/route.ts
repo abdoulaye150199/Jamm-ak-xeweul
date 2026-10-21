@@ -3,10 +3,12 @@ import { createMemberSessionToken, verifyMemberPassword } from '@/lib/member-aut
 import { isBackendConfigured, proxyToBackend } from '@/lib/backend-client';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { getMemberByEmail } from '@/lib/site-store';
+import { readJsonObject } from '@/lib/request-validation';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await readJsonObject(request);
+    if (!body) return NextResponse.json({ error: 'Le corps de la requête doit être un objet JSON valide.' }, { status: 400 });
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const password = typeof body.password === 'string' ? body.password : '';
     if (!email || !password) return NextResponse.json({ error: 'Veuillez renseigner votre e-mail et votre mot de passe.' }, { status: 400 });

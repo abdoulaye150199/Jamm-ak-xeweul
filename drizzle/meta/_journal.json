@@ -15,6 +15,20 @@
       "when": 1788270904099,
       "tag": "0001_add_member_auth_and_event_date",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790684227538,
+      "tag": "0002_keen_tombstone",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790722239234,
+      "tag": "0003_hot_power_pack",
+      "breakpoints": true
     }
   ]
 }

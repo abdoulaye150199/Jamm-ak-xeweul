@@ -5,8 +5,8 @@ import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-export default function Admin() {
-  const session = cookies().get(ADMIN_SESSION_COOKIE)?.value;
+export default async function Admin() {
+  const session = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
   if (!isValidAdminSession(session)) redirect('/login/admin');
   return <AdminDashboard />;
 }

@@ -3,28 +3,30 @@ import { ADMIN_SESSION_COOKIE, isValidAdminSession } from '@/lib/admin-auth';
 import { addEvent } from '@/lib/site-store';
 import { cookies } from 'next/headers';
 import { isBackendConfigured, proxyToBackend } from '@/lib/backend-client';
+import { hasRequiredStrings, parseEventDate, readJsonObject } from '@/lib/request-validation';
 
 export async function POST(request: Request) {
-  if (isBackendConfigured()) return proxyToBackend(request, '/admin/events', await request.json());
-  const session = cookies().get(ADMIN_SESSION_COOKIE)?.value;
-  if (!isValidAdminSession(session)) return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+  const session = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
+  if (!isBackendConfigured() && !isValidAdminSession(session)) return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
 
   try {
-    const body = await request.json();
-    const requiredFields = ['date', 'title', 'time', 'place'];
-    if (requiredFields.some(field => typeof body[field] !== 'string' || !body[field].trim())) {
+    const body = await readJsonObject(request);
+    if (!body) return NextResponse.json({ error: 'Le corps de la requête doit être un objet JSON valide.' }, { status: 400 });
+    if (isBackendConfigured()) return proxyToBackend(request, '/admin/events', body);
+    const requiredFields = ['date', 'title', 'time', 'place'] as const;
+    if (!hasRequiredStrings(body, requiredFields)) {
       return NextResponse.json({ error: 'Veuillez renseigner tous les champs de l’événement.' }, { status: 400 });
     }
     if (body.title.length > 200 || body.time.length > 80 || body.place.length > 500) {
       return NextResponse.json({ error: 'Un ou plusieurs champs sont trop longs.' }, { status: 400 });
     }
 
-    const eventDate = new Date(`${body.date}T12:00:00`);
-    if (Number.isNaN(eventDate.getTime())) return NextResponse.json({ error: 'La date est invalide.' }, { status: 400 });
+    const eventDate = parseEventDate(body.date);
+    if (!eventDate) return NextResponse.json({ error: 'La date est invalide.' }, { status: 400 });
 
     const event = await addEvent({
-      day: new Intl.DateTimeFormat('fr-FR', { day: '2-digit' }).format(eventDate),
-      weekday: new Intl.DateTimeFormat('fr-FR', { weekday: 'short' }).format(eventDate).replace('.', ''),
+      day: new Intl.DateTimeFormat('fr-FR', { day: '2-digit', timeZone: 'Africa/Dakar' }).format(eventDate),
+      weekday: new Intl.DateTimeFormat('fr-FR', { weekday: 'short', timeZone: 'Africa/Dakar' }).format(eventDate).replace('.', ''),
       eventDate,
       title: body.title.trim(),
       time: body.time.trim(),

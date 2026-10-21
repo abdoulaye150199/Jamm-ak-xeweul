@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, FileText, Plus, Search, Users } from 'lucide-react';
+import { ArrowUpRight, CalendarDays, Check, ChevronLeft, ChevronRight, FileText, Plus, Search, Users } from 'lucide-react';
 import {
   AdminSidebar,
   AdminTopbar,
@@ -58,6 +58,7 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
   const [loadError, setLoadError] = useState('');
   const [eventOpen, setEventOpen] = useState(false);
   const [flash, setFlash] = useState('');
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const [totalItems, setTotalItems] = useState(0);
   const pageSize = 8;
 
@@ -93,14 +94,15 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
   const unreadCount = notifications.filter(notification => !notification.read && (memberAlerts || notification.type !== 'member')).length;
 
   async function logout() {
-    await fetch('/api/admin/logout', { method: 'POST' });
+    const response = await fetch('/api/admin/logout', { method: 'POST' }).catch(() => null);
+    if (!response?.ok) { setFlash('Impossible de vous déconnecter. Réessayez.'); return; }
     router.push('/login/admin');
     router.refresh();
   }
 
   async function markNotificationsRead() {
-    setNotifications(items => items.map(item => ({ ...item, read: true })));
-    await fetch('/api/admin/notifications', { method: 'POST' });
+    const response = await fetch('/api/admin/notifications', { method: 'POST' }).catch(() => null);
+    if (response?.ok) setNotifications(items => items.map(item => ({ ...item, read: true })));
   }
 
   async function publishEvent(event: FormEvent<HTMLFormElement>) {
@@ -116,14 +118,32 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
         place: formData.get('place'),
         featured: formData.get('featured') === 'on',
       }),
-    });
-    if (!response.ok) {
-      const data = await response.json().catch(() => null);
+    }).catch(() => null);
+    if (!response?.ok) {
+      const data = await response?.json().catch(() => null);
       setFlash(data?.error ?? 'Impossible de publier cette activité.');
       return;
     }
     setEventOpen(false);
     setFlash('L’activité est publiée et visible dans l’agenda.');
+    await refresh();
+  }
+
+  async function approveContribution(id: string) {
+    setApprovingId(id);
+    const response = await fetch(`/api/admin/contributions/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'En étude' }),
+    }).catch(() => null);
+    if (!response?.ok) {
+      const data = await response?.json().catch(() => null);
+      setFlash(data?.error ?? 'Impossible d’approuver cette contribution.');
+      setApprovingId(null);
+      return;
+    }
+    setFlash('La contribution est approuvée et passe en étude.');
+    setApprovingId(null);
     await refresh();
   }
 
@@ -148,7 +168,7 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
         {flash && <div className="mb-5 flex items-center justify-between rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-bold text-brand-700"><span>{flash}</span><button onClick={() => setFlash('')} aria-label="Fermer le message">×</button></div>}
         {eventOpen ? <NewEventPage backLabel="Retour aux activités" onClose={() => setEventOpen(false)} onSubmit={publishEvent} /> : <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-card">
           <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"><div><p className="text-sm font-bold text-slate-500">{totalItems} élément{totalItems > 1 ? 's' : ''}</p><p className="mt-1 text-xs text-slate-400">La liste se met à jour automatiquement.</p></div><label className="relative block w-full sm:max-w-sm"><Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={`Rechercher ${kind === 'contributions' ? 'une contribution' : kind === 'membres' ? 'un membre' : 'une activité'}`} className="input-focus !min-h-11 !rounded-xl !py-2.5 !pl-10" /></label></div>
-          {kind === 'contributions' && <ContributionList items={visibleContributions} empty={config.empty} />}
+          {kind === 'contributions' && <ContributionList items={visibleContributions} empty={config.empty} onApprove={approveContribution} approvingId={approvingId} />}
           {kind === 'membres' && <MemberList items={visibleMembers} empty={config.empty} />}
           {kind === 'activites' && <EventList items={visibleEvents} empty={config.empty} />}
           {loadError && <p role="alert" className="border-t border-red-100 bg-red-50 px-5 py-3 text-sm font-bold text-red-600">{loadError}</p>}
@@ -160,9 +180,9 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
   </div>;
 }
 
-function ContributionList({ items, empty }: { items: Contribution[]; empty: string }) {
+function ContributionList({ items, empty, onApprove, approvingId }: { items: Contribution[]; empty: string; onApprove: (id: string) => void; approvingId: string | null }) {
   if (!items.length) return <EmptyList icon={<FileText />} message={empty} />;
-  return <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-slate-50 text-[10px] uppercase tracking-[.16em] text-slate-400"><tr><th className="px-6 py-3 font-extrabold">Contribution</th><th className="px-4 py-3 font-extrabold">Type</th><th className="px-4 py-3 font-extrabold">Statut</th><th className="px-4 py-3 font-extrabold">Date</th></tr></thead><tbody className="divide-y divide-slate-100">{items.map(item => <tr key={item.id} className="transition hover:bg-brand-50/40"><td className="px-6 py-4"><p className="font-bold">{item.title}</p><p className="mt-1 text-xs text-slate-400">{item.author} · {item.neighborhood}</p><p className="mt-2 max-w-xl text-xs leading-5 text-slate-500">{item.description}</p></td><td className="px-4 py-4"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">{item.type}</span></td><td className="px-4 py-4"><Status status={item.status} /></td><td className="px-4 py-4 text-xs text-slate-500">{formatRelativeDate(item.createdAt)}</td></tr>)}</tbody></table></div>;
+  return <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm"><thead className="bg-slate-50 text-[10px] uppercase tracking-[.16em] text-slate-400"><tr><th className="px-6 py-3 font-extrabold">Contribution</th><th className="px-4 py-3 font-extrabold">Type</th><th className="px-4 py-3 font-extrabold">Statut</th><th className="px-4 py-3 font-extrabold">Date</th><th className="px-4 py-3 font-extrabold">Action</th></tr></thead><tbody className="divide-y divide-slate-100">{items.map(item => <tr key={item.id} className="transition hover:bg-brand-50/40"><td className="px-6 py-4"><p className="font-bold">{item.title}</p><p className="mt-1 text-xs text-slate-400">{item.author} · {item.neighborhood}</p><p className="mt-2 max-w-xl text-xs leading-5 text-slate-500">{item.description}</p></td><td className="px-4 py-4"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">{item.type}</span></td><td className="px-4 py-4"><Status status={item.status} /></td><td className="px-4 py-4 text-xs text-slate-500">{formatRelativeDate(item.createdAt)}</td><td className="px-4 py-4">{item.status === 'Nouveau' ? <button onClick={() => onApprove(item.id)} disabled={approvingId === item.id} className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-xs font-extrabold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"><Check size={14} /> {approvingId === item.id ? 'Approbation…' : 'Approuver'}</button> : <span className="text-xs font-bold text-slate-400">Traitée</span>}</td></tr>)}</tbody></table></div>;
 }
 
 function MemberList({ items, empty }: { items: DashboardMember[]; empty: string }) {

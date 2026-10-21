@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server';
 import { ADMIN_SESSION_COOKIE, getAdminSessionToken, isAdminCredentials } from '@/lib/admin-auth';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { isBackendConfigured, proxyToBackend } from '@/lib/backend-client';
+import { readJsonObject } from '@/lib/request-validation';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await readJsonObject(request);
+    if (!body) return NextResponse.json({ error: 'Le corps de la requête doit être un objet JSON valide.' }, { status: 400 });
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
     const limit = checkRateLimit(`admin:${ip}`);
     if (!limit.allowed) return NextResponse.json({ error: 'Trop de tentatives. Réessayez plus tard.' }, { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } });

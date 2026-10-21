@@ -2,18 +2,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowDownRight, ArrowRight, CalendarDays, Check, ChevronRight, Clock3, Lightbulb, MapPin, Megaphone, QrCode, Quote, Sparkles, Users } from 'lucide-react';
 import { ActivitySlider, ChatWidget, Footer, PublicHeader } from '@/components/site';
-import { getAdminSnapshot, getEvents, type StoredEvent } from '@/lib/site-store';
+import { getPublicStats, getEvents, type StoredEvent } from '@/lib/site-store';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  const siteData = await getAdminSnapshot();
-  const agendaEvents = await getEvents();
-  const homeStats = {
-    members: siteData.members.length,
-    neighborhoods: new Set(siteData.members.map(member => member.neighborhood)).size,
-    actions: siteData.events.length,
-  };
+  const [homeStats, agendaEvents] = await Promise.all([getPublicStats(), getEvents()]);
   return (
     <div className="min-h-screen overflow-hidden bg-[#f4f4f1]">
       <PublicHeader />

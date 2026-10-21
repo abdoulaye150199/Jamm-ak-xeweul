@@ -33,8 +33,9 @@ export function isAdminCredentials(email: string, password: string) {
 export function isValidAdminSession(token?: string) {
   if (!token) return false;
   try {
-    const [encodedPayload, signature] = token.split('.');
-    if (!encodedPayload || !signature) return false;
+    const parts = token.split('.');
+    const [encodedPayload, signature] = parts;
+    if (parts.length !== 2 || !encodedPayload || !signature) return false;
     const payload = Buffer.from(encodedPayload, 'base64url').toString('utf8');
     const expectedSignature = createHmac('sha256', getSessionSecret()).update(payload).digest('base64url');
     if (!safeCompare(signature, expectedSignature)) return false;

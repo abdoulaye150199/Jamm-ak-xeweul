@@ -43,15 +43,22 @@ export function PublicHeader() {
         <div className="flex items-center gap-2 lg:hidden"><Link href="/inscription" className="btn-primary shrink-0 !bg-brand-600 !px-3.5 !py-2.5 !text-xs sm:!px-4">Adhérer</Link></div>
       </div>
     </header>
-    <nav aria-label="Navigation principale mobile" className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/90 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_30px_rgba(20,38,29,.12)] backdrop-blur-xl lg:hidden">
-      <div className="mx-auto grid h-[70px] max-w-md grid-cols-5 items-end gap-1 px-2">
-        {mobileNavLinks.map(({ href, label, icon: Icon, action }) => <Link key={href} href={href} aria-current={isActive(href) ? 'page' : undefined} className={`flex h-full min-w-0 flex-col items-center justify-center gap-1 text-[10px] font-extrabold transition ${action ? 'text-brand-950' : isActive(href) ? 'text-brand-700' : 'text-slate-400 hover:text-brand-700'}`}>
-          <span className={action ? '-mt-7 flex h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-sun-500 text-brand-950 shadow-lg shadow-brand-900/20' : `flex h-8 w-8 items-center justify-center rounded-xl ${isActive(href) ? 'bg-brand-50' : ''}`}><Icon size={action ? 23 : 19} strokeWidth={action ? 2.5 : 2.2} /></span>
-          <span className={action ? 'mt-0.5' : ''}>{label}</span>
-        </Link>)}
-      </div>
-    </nav>
+    <MobileBottomNav />
   </>;
+}
+
+export function MobileBottomNav() {
+  const pathname = usePathname();
+  const isActive = (href: string) => href === '/' ? pathname === '/' : pathname.startsWith(href);
+
+  return <nav aria-label="Navigation principale mobile" className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/90 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_30px_rgba(20,38,29,.12)] backdrop-blur-xl lg:hidden">
+    <div className="mx-auto grid h-[70px] max-w-md grid-cols-5 items-end gap-1 px-2">
+      {mobileNavLinks.map(({ href, label, icon: Icon, action }) => <Link key={href} href={href} aria-current={isActive(href) ? 'page' : undefined} className={`flex h-full min-w-0 flex-col items-center justify-center gap-1 text-[10px] font-extrabold transition ${action ? 'text-brand-950' : isActive(href) ? 'text-brand-700' : 'text-slate-400 hover:text-brand-700'}`}>
+        <span className={action ? '-mt-7 flex h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-sun-500 text-brand-950 shadow-lg shadow-brand-900/20' : `flex h-8 w-8 items-center justify-center rounded-xl ${isActive(href) ? 'bg-brand-50' : ''}`}><Icon size={action ? 23 : 19} strokeWidth={action ? 2.5 : 2.2} /></span>
+        <span className={action ? 'mt-0.5' : ''}>{label}</span>
+      </Link>)}
+    </div>
+  </nav>;
 }
 
 function HeaderLogo() {

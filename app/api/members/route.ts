@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createMemberSessionToken, hashMemberPassword } from '@/lib/member-auth';
 import { isBackendConfigured, proxyToBackend } from '@/lib/backend-client';
 import { addMember } from '@/lib/site-store';
+import { hasRequiredStrings, readJsonObject } from '@/lib/request-validation';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -13,10 +14,11 @@ function isUniqueConstraintError(error: unknown) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await readJsonObject(request);
+    if (!body) return NextResponse.json({ error: 'Le corps de la requête doit être un objet JSON valide.' }, { status: 400 });
     if (isBackendConfigured()) return proxyToBackend(request, '/members', body);
-    const requiredFields = ['firstName', 'lastName', 'email', 'neighborhood', 'phone', 'password'];
-    if (requiredFields.some(field => typeof body[field] !== 'string' || !body[field].trim())) {
+    const requiredFields = ['firstName', 'lastName', 'email', 'neighborhood', 'phone', 'password'] as const;
+    if (!hasRequiredStrings(body, requiredFields)) {
       return NextResponse.json({ error: 'Veuillez renseigner tous les champs obligatoires.' }, { status: 400 });
     }
     if (!emailPattern.test(body.email.trim()) || body.email.trim().length > 255) {
@@ -47,10 +49,10 @@ export async function POST(request: Request) {
     });
     return response;
   } catch (error) {
-    const databaseError = error as { code?: unknown; cause?: { code?: unknown; constraint?: unknown } };
+    const databaseError = error as { name?: string; code?: unknown; error?: { code?: string }; cause?: { name?: string; code?: unknown; constraint?: unknown; message?: string } };
     const errorCode = databaseError.code ?? databaseError.cause?.code;
     const constraint = databaseError.cause?.constraint;
-    console.error('Member registration failed:', { code: errorCode, constraint });
+    console.error('Member registration failed:', { name: databaseError.name, code: errorCode ?? databaseError.error?.code, constraint, cause: databaseError.cause?.name });
     if (errorCode === '23505' || isUniqueConstraintError(error)) {
       return NextResponse.json({ error: 'Cette adresse e-mail est déjà utilisée.' }, { status: 409 });
     }

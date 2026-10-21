@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-export default function AdminContributions() {
-  if (!isValidAdminSession(cookies().get(ADMIN_SESSION_COOKIE)?.value)) redirect('/login/admin');
+export default async function AdminContributions() {
+  if (!isValidAdminSession((await cookies()).get(ADMIN_SESSION_COOKIE)?.value)) redirect('/login/admin');
   return <AdminListPage kind="contributions" />;
 }

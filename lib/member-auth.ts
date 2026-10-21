@@ -42,8 +42,9 @@ export function getMemberIdFromSession(token?: string) {
   if (!token) return null;
 
   try {
-    const [encodedPayload, signature] = token.split('.');
-    if (!encodedPayload || !signature) return null;
+    const parts = token.split('.');
+    const [encodedPayload, signature] = parts;
+    if (parts.length !== 2 || !encodedPayload || !signature) return null;
 
     const payload = Buffer.from(encodedPayload, 'base64url').toString('utf8');
     if (!safeCompare(signature, sign(payload))) return null;
