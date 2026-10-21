@@ -12,6 +12,7 @@ type Member = { firstName: string; lastName: string; email: string; neighborhood
 type MemberContribution = { id: string; title: string; type: 'Besoin' | 'Idée'; status: string; createdAt: string; image: string | null };
 type MemberNotification = { id: string; memberId: string | null; type: 'member' | 'event' | 'contribution'; title: string; message: string; createdAt: string; read: boolean };
 type MemberActivity = { kind: "agenda"; id: string; day: string; weekday: string; title: string; time: string; place: string } | { kind: "gallery"; id: string; title: string; category: string; date: string; photos: number };
+type MemberSection = 'accueil' | 'mes-contributions' | 'mes-idees' | 'activites';
 
 export function MemberDashboard({ member, contributions, activities, notifications }: { member: Member; contributions: MemberContribution[]; activities: MemberActivity[]; notifications: MemberNotification[] }) {
   const router = useRouter();
@@ -19,6 +20,21 @@ export function MemberDashboard({ member, contributions, activities, notificatio
   const [showContributionForm, setShowContributionForm] = useState(false);
   const [contributionType, setContributionType] = useState<'Besoin' | 'Idée'>('Besoin');
   const [sessionError, setSessionError] = useState('');
+  const [activeSection, setActiveSection] = useState<MemberSection>('accueil');
+
+  useEffect(() => {
+    const syncActiveSection = () => {
+      const section = window.location.hash.slice(1);
+      setActiveSection(section === 'mes-contributions' || section === 'mes-idees' || section === 'activites' ? section : 'accueil');
+    };
+    syncActiveSection();
+    window.addEventListener('hashchange', syncActiveSection);
+    window.addEventListener('popstate', syncActiveSection);
+    return () => {
+      window.removeEventListener('hashchange', syncActiveSection);
+      window.removeEventListener('popstate', syncActiveSection);
+    };
+  }, []);
 
   function openContributionForm(type: 'Besoin' | 'Idée' = 'Besoin') {
     setContributionType(type);
@@ -41,7 +57,7 @@ export function MemberDashboard({ member, contributions, activities, notificatio
   return <div className="min-h-screen bg-[#f6faf7] pb-[86px] lg:pb-0">
     <DashboardTop member={member} onLogout={logout} notifications={notifications} />
     <div className="mx-auto grid max-w-7xl gap-6 px-5 py-7 lg:grid-cols-[230px_1fr]">
-      <DashboardSide onLogout={logout} />
+      <DashboardSide activeSection={activeSection} onNavigate={setActiveSection} onLogout={logout} />
       <main className="min-w-0">
         {sessionError && <p role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm font-bold text-red-600">{sessionError}</p>}
         <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -75,7 +91,7 @@ export function MemberDashboard({ member, contributions, activities, notificatio
             <div className="flex items-start justify-between"><div><p className="eyebrow text-sun-400">Dans votre espace</p><h2 className="mt-3 text-2xl font-extrabold">Activités du mouvement</h2></div><span className="rounded-xl bg-white/10 p-2.5 text-sun-400"><Bell size={18} /></span></div>
             <p className="mt-4 text-sm leading-6 text-white/60">Retrouvez les activités et les prochains rendez-vous sans quitter votre espace.</p>
             {activities.length ? <div className="mt-6 space-y-3">{activities.slice(0, 2).map(activity => <ActivityPreview key={activity.id} activity={activity} dark />)}</div> : <div className="mt-6 flex items-center gap-3 border-y border-white/10 py-5"><div className="rounded-xl bg-sun-500 p-3 text-brand-950"><Activity size={22} /></div><p className="text-sm text-white/70">Les prochaines activités seront publiées ici.</p></div>}
-            <Link href="#activites" className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 py-3 text-sm font-bold transition hover:bg-brand-500">Afficher les activités <ArrowUpRight size={15} /></Link>
+            <Link href="#activites" onNavigate={() => setActiveSection('activites')} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 py-3 text-sm font-bold transition hover:bg-brand-500">Afficher les activités <ArrowUpRight size={15} /></Link>
           </section>
         </div>
 
@@ -98,7 +114,7 @@ export function MemberDashboard({ member, contributions, activities, notificatio
 
         <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-card">
           <div className="flex items-center justify-between"><div><h2 className="text-xl font-extrabold text-brand-900">Actions recommandées</h2><p className="mt-1 text-sm text-slate-500">Des façons simples de participer.</p></div><Lightbulb className="text-sun-500" /></div>
-          <div className="mt-5 grid gap-3 md:grid-cols-3"><Recommendation icon={<Lightbulb />} title="Proposer une idée" onClick={() => openContributionForm('Idée')} /><Recommendation icon={<UsersIcon />} title="Découvrir nos axes" href="/axes" /><Recommendation icon={<Activity />} title="Voir les activités" href="#activites" /></div>
+          <div className="mt-5 grid gap-3 md:grid-cols-3"><Recommendation icon={<Lightbulb />} title="Proposer une idée" onClick={() => openContributionForm('Idée')} /><Recommendation icon={<UsersIcon />} title="Découvrir nos axes" href="/axes" /><Recommendation icon={<Activity />} title="Voir les activités" href="#activites" onNavigate={() => setActiveSection('activites')} /></div>
         </section>
       </main>
     </div>
@@ -227,9 +243,22 @@ function MemberNotifications({ notifications: initialNotifications }: { notifica
 
   return <div className="relative"><button onClick={openNotifications} className="relative rounded-xl p-2 text-slate-400 transition hover:bg-brand-50 hover:text-brand-600" aria-label="Afficher les notifications" aria-expanded={open}><Bell size={18} />{unreadCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-sun-500 px-1 text-[9px] font-black text-brand-950 ring-2 ring-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}</button>{open && <div className="fixed inset-x-4 top-20 z-50 overflow-hidden rounded-2xl border border-slate-200 bg-white text-brand-900 shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-[380px]"><div className="flex items-center justify-between border-b border-slate-100 p-4"><div><p className="font-extrabold">Notifications</p><p className="text-xs text-slate-400">Les nouvelles activités du mouvement</p></div><button onClick={() => setOpen(false)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100" aria-label="Fermer les notifications"><X size={17} /></button></div><div className="max-h-80 overflow-y-auto">{notifications.length ? notifications.map(notification => <div key={notification.id} className="flex gap-3 border-b border-slate-100 p-4 last:border-0"><span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-sun-500" /><div><p className="text-sm font-bold">{notification.title}</p><p className="mt-1 text-xs leading-5 text-slate-500">{notification.message}</p><p className="mt-1 text-[11px] text-slate-400">{formatRelativeDate(notification.createdAt)}</p></div></div>) : <p className="p-5 text-sm text-slate-500">Aucune notification pour le moment.</p>}</div></div>}</div>;
 }
-function DashboardSide({ onLogout }: { onLogout: () => void }) { return <aside className="hidden lg:block"><div className="sticky top-7 rounded-3xl border border-slate-200 bg-white p-3 shadow-card"><div className="px-3 pb-3 pt-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Menu principal</div><nav className="space-y-1"><SideLink active icon={<Home size={17} />} label="Accueil" href="/espace-membre" /><SideLink icon={<FileText size={17} />} label="Mes contributions" href="#mes-contributions" /><SideLink icon={<Lightbulb size={17} />} label="Mes idées" href="#mes-idees" /><SideLink icon={<Activity size={17} />} label="Les activités" href="#activites" /></nav><div className="my-4 h-px bg-slate-100" /><button onClick={onLogout} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold text-red-500 hover:bg-red-50"><LogOut size={17} /> Quitter l’espace</button><Link href="/" className="mt-1 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-slate-500 hover:bg-slate-50"><Settings size={17} /> Accueil du site</Link></div></aside>; }
-function SideLink({ active = false, icon, label, href }: { active?: boolean; icon: React.ReactNode; label: string; href: string }) { return <Link href={href} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition ${active ? 'bg-brand-900 text-white shadow-lg shadow-brand-900/15' : 'text-slate-500 hover:bg-brand-50 hover:text-brand-700'}`}>{icon} {label}</Link>; }
+function DashboardSide({ activeSection, onNavigate, onLogout }: { activeSection: MemberSection; onNavigate: (section: MemberSection) => void; onLogout: () => void }) {
+  return <aside className="hidden lg:block"><div className="sticky top-7 rounded-3xl border border-slate-200 bg-white p-3 shadow-card">
+    <div className="px-3 pb-3 pt-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Menu principal</div>
+    <nav aria-label="Navigation de l’espace membre" className="space-y-1">
+      <SideLink active={activeSection === 'accueil'} onNavigate={() => onNavigate('accueil')} icon={<Home size={17} />} label="Accueil" href="/espace-membre" />
+      <SideLink active={activeSection === 'mes-contributions'} onNavigate={() => onNavigate('mes-contributions')} icon={<FileText size={17} />} label="Mes contributions" href="#mes-contributions" />
+      <SideLink active={activeSection === 'mes-idees'} onNavigate={() => onNavigate('mes-idees')} icon={<Lightbulb size={17} />} label="Mes idées" href="#mes-idees" />
+      <SideLink active={activeSection === 'activites'} onNavigate={() => onNavigate('activites')} icon={<Activity size={17} />} label="Les activités" href="#activites" />
+    </nav>
+    <div className="my-4 h-px bg-slate-100" />
+    <button onClick={onLogout} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold text-red-500 hover:bg-red-50"><LogOut size={17} /> Quitter l’espace</button>
+    <Link href="/" className="mt-1 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-slate-500 hover:bg-slate-50"><Settings size={17} /> Accueil du site</Link>
+  </div></aside>;
+}
+function SideLink({ active = false, icon, label, href, onNavigate }: { active?: boolean; icon: React.ReactNode; label: string; href: string; onNavigate: () => void }) { return <Link href={href} onNavigate={onNavigate} aria-current={active ? 'location' : undefined} className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition ${active ? 'bg-brand-900 text-white shadow-lg shadow-brand-900/15' : 'text-slate-500 hover:bg-brand-50 hover:text-brand-700'}`}>{icon} {label}</Link>; }
 function MemberStat({ label, value, change, icon }: { label: string; value: string; change: string; icon: React.ReactNode }) { return <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card"><div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-500">{label}</p><span className="rounded-xl bg-brand-50 p-2.5 text-brand-600">{icon}</span></div><p className="mt-4 text-3xl font-extrabold text-brand-900">{value}</p><p className="mt-1 text-xs font-bold text-slate-400">{change}</p></div>; }
-function Recommendation({ icon, title, href, onClick }: { icon: React.ReactNode; title: string; href?: string; onClick?: () => void }) { const className = 'flex items-center gap-3 rounded-2xl border border-slate-100 p-4 text-left transition hover:border-brand-200 hover:bg-brand-50'; const content = <><span className="rounded-xl bg-sun-50 p-2.5 text-sun-600">{icon}</span><span className="flex-1 text-sm font-bold text-brand-900">{title}</span><ArrowUpRight size={15} className="text-slate-300" /></>; return onClick ? <button onClick={onClick} className={`w-full ${className}`}>{content}</button> : <Link href={href ?? '#'} className={className}>{content}</Link>; }
+function Recommendation({ icon, title, href, onClick, onNavigate }: { icon: React.ReactNode; title: string; href?: string; onClick?: () => void; onNavigate?: () => void }) { const className = 'flex items-center gap-3 rounded-2xl border border-slate-100 p-4 text-left transition hover:border-brand-200 hover:bg-brand-50'; const content = <><span className="rounded-xl bg-sun-50 p-2.5 text-sun-600">{icon}</span><span className="flex-1 text-sm font-bold text-brand-900">{title}</span><ArrowUpRight size={15} className="text-slate-300" /></>; return onClick ? <button onClick={onClick} className={`w-full ${className}`}>{content}</button> : <Link href={href ?? '#'} onNavigate={onNavigate} className={className}>{content}</Link>; }
 function ActivityPreview({ activity, dark = false }: { activity: MemberActivity; dark?: boolean }) { if (activity.kind === "gallery") return <div className={`flex items-center gap-3 rounded-2xl p-3 ${dark ? "border border-white/10 bg-white/5" : "border border-slate-100 bg-[#fbfcfb]"}`}><div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${dark ? "bg-sun-500 text-brand-950" : "bg-brand-100 text-brand-600"}`}><Activity size={18} /></div><div className="min-w-0 flex-1"><p className={`truncate text-sm font-extrabold ${dark ? "text-white" : "text-brand-900"}`}>{activity.title}</p><p className={`mt-1 text-xs ${dark ? "text-white/55" : "text-slate-400"}`}>{activity.category} · {activity.date}</p></div><ChevronRight size={15} className={dark ? "text-sun-400" : "text-slate-300"} /></div>; return <div className={`flex items-center gap-3 rounded-2xl p-3 ${dark ? "border border-white/10 bg-white/5" : "border border-slate-100 bg-[#fbfcfb]"}`}><div className={`min-w-12 rounded-xl p-2 text-center ${dark ? "bg-sun-500 text-brand-950" : "bg-brand-100 text-brand-900"}`}><p className="text-[9px] font-extrabold uppercase">{activity.weekday}</p><p className="text-xl font-extrabold leading-none">{activity.day}</p></div><div className="min-w-0 flex-1"><p className={`truncate text-sm font-extrabold ${dark ? "text-white" : "text-brand-900"}`}>{activity.title}</p><p className={`mt-1 flex flex-wrap gap-2 text-xs ${dark ? "text-white/55" : "text-slate-400"}`}><span className="flex items-center gap-1"><Clock3 size={11} /> {activity.time}</span><span className="flex items-center gap-1"><MapPin size={11} /> {activity.place}</span></p></div><ChevronRight size={15} className={dark ? "text-sun-400" : "text-slate-300"} /></div>; }
 function UsersIcon() { return <Users size={17} />; }
