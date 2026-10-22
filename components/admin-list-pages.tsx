@@ -1,18 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowUpRight, CalendarDays, Check, ChevronLeft, ChevronRight, Eye, FileText, Plus, Search, Trash2, Users } from 'lucide-react';
 import {
   AdminSidebar,
   AdminTopbar,
-  NewEventPage,
   NotificationsPanel,
   SettingsModal,
   Status,
 } from '@/components/admin-dashboard';
 import type { Contribution, DashboardEvent, DashboardMember, DashboardNotification } from '@/components/admin/types';
+import { EventFormPage } from '@/components/admin/event-form';
+import { EventCard } from '@/components/admin/event-card';
+import { DeleteEventDialog } from '@/components/admin/event-dialog';
 import { formatRelativeDate } from '@/lib/format';
 import { DeleteMemberDialog, MemberDetailsDialog } from '@/components/admin/member-dialogs';
 
@@ -58,6 +60,8 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
   const [memberAlerts, setMemberAlerts] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [eventOpen, setEventOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<DashboardEvent | null>(null);
+  const [deletingEvent, setDeletingEvent] = useState<DashboardEvent | null>(null);
   const [flash, setFlash] = useState('');
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [totalItems, setTotalItems] = useState(0);
@@ -112,27 +116,23 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
     if (response?.ok) setNotifications(items => items.map(item => ({ ...item, read: true })));
   }
 
-  async function publishEvent(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const response = await fetch('/api/admin/events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        date: formData.get('date'),
-        title: formData.get('title'),
-        time: formData.get('time'),
-        place: formData.get('place'),
-        featured: formData.get('featured') === 'on',
-      }),
-    }).catch(() => null);
-    if (!response?.ok) {
-      const data = await response?.json().catch(() => null);
-      setFlash(data?.error ?? 'Impossible de publier cette activité.');
-      return;
-    }
+  function openEventForm(event: DashboardEvent | null = null) {
+    setEditingEvent(event);
+    setFlash('');
+    setEventOpen(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function eventSaved() {
+    setFlash(editingEvent ? 'L’activité a été modifiée dans les agendas.' : 'L’activité est publiée et visible dans les agendas.');
     setEventOpen(false);
-    setFlash('L’activité est publiée et visible dans l’agenda.');
+    setEditingEvent(null);
+    await refresh();
+  }
+
+  async function eventDeleted() {
+    setDeletingEvent(null);
+    setFlash('L’activité a été supprimée des agendas.');
     await refresh();
   }
 
@@ -191,22 +191,23 @@ export function AdminListPage({ kind }: { kind: ListKind }) {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="eyebrow text-brand-600">{config.eyebrow}</p><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{config.title}</h1><p className="mt-2 max-w-2xl text-sm text-slate-500 sm:text-base">{config.description}</p></div>
           <div className="flex flex-wrap gap-2">
-            {kind === 'activites' && <button onClick={() => { setFlash(''); setEventOpen(true); }} className="btn-primary !rounded-xl !bg-brand-900"><Plus size={17} /> Nouvelle activité</button>}
+            {kind === 'activites' && !eventOpen && <button onClick={() => openEventForm()} className="btn-primary !rounded-xl !bg-brand-900"><Plus size={17} /> Nouvelle activité</button>}
             <Link href="/admin" className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold shadow-sm transition hover:border-brand-300 hover:bg-brand-50"><ArrowUpRight size={16} /> Vue d’ensemble</Link>
           </div>
         </div>
 
         {flash && <div className="mb-5 flex items-center justify-between rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-bold text-brand-700"><span>{flash}</span><button onClick={() => setFlash('')} aria-label="Fermer le message">×</button></div>}
-        {eventOpen ? <NewEventPage backLabel="Retour aux activités" onClose={() => setEventOpen(false)} onSubmit={publishEvent} /> : <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-card">
+        {eventOpen ? <EventFormPage key={editingEvent?.id ?? 'new'} event={editingEvent} backLabel="Retour aux activités" onClose={() => setEventOpen(false)} onSaved={eventSaved} /> : <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-card">
           <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"><div><p className="text-sm font-bold text-slate-500">{totalItems} élément{totalItems > 1 ? 's' : ''}</p><p className="mt-1 text-xs text-slate-400">La liste se met à jour automatiquement.</p></div><label className="relative block w-full sm:max-w-sm"><Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={query} onChange={event => setQuery(event.target.value)} placeholder={`Rechercher ${kind === 'contributions' ? 'une contribution' : kind === 'membres' ? 'un membre' : 'une activité'}`} className="input-focus !min-h-11 !rounded-xl !py-2.5 !pl-10" /></label></div>
           {kind === 'contributions' && <ContributionList items={visibleContributions} empty={config.empty} onApprove={approveContribution} approvingId={approvingId} />}
           {kind === 'membres' && <MemberList items={visibleMembers} empty={config.empty} onDetails={setViewingMember} onDelete={openMemberDeletion} />}
-          {kind === 'activites' && <EventList items={visibleEvents} empty={config.empty} />}
+          {kind === 'activites' && <EventList items={visibleEvents} empty={config.empty} onEdit={openEventForm} onDelete={setDeletingEvent} />}
           {loadError && <p role="alert" className="border-t border-red-100 bg-red-50 px-5 py-3 text-sm font-bold text-red-600">{loadError}</p>}
           <Pagination page={currentPage} totalPages={totalPages} onChange={setPage} />
         </section>}
       </main>
     </div>
+    {deletingEvent && <DeleteEventDialog key={deletingEvent.id} event={deletingEvent} onClose={() => setDeletingEvent(null)} onDeleted={eventDeleted} />}
     {settingsOpen && <SettingsModal autoRefresh={autoRefresh} memberAlerts={memberAlerts} onClose={() => setSettingsOpen(false)} onSave={(nextAutoRefresh, nextMemberAlerts) => { setAutoRefresh(nextAutoRefresh); setMemberAlerts(nextMemberAlerts); setSettingsOpen(false); }} />}
     {viewingMember && <MemberDetailsDialog key={viewingMember.id} member={viewingMember} onClose={() => setViewingMember(null)} onDelete={openMemberDeletion} />}
     {deletingMember && <DeleteMemberDialog member={deletingMember} busy={memberDeletionBusy} error={memberDeletionError} onClose={() => { if (!memberDeletionBusy) setDeletingMember(null); }} onConfirm={confirmMemberDeletion} />}
@@ -229,9 +230,9 @@ function MemberList({ items, empty, onDetails, onDelete }: { items: DashboardMem
   </div>)}</div>;
 }
 
-function EventList({ items, empty }: { items: DashboardEvent[]; empty: string }) {
+function EventList({ items, empty, onEdit, onDelete }: { items: DashboardEvent[]; empty: string; onEdit: (event: DashboardEvent) => void; onDelete: (event: DashboardEvent) => void }) {
   if (!items.length) return <EmptyList icon={<CalendarDays />} message={empty} />;
-  return <div className="grid gap-3 p-5 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">{items.map(item => <article key={item.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4"><div className="flex items-center gap-2 text-xs font-extrabold uppercase text-brand-600"><span className="rounded-lg bg-sun-100 px-2 py-1 text-sun-700">{item.weekday} {item.day}</span><span>{item.time}</span></div><h2 className="mt-3 font-extrabold">{item.title}</h2><p className="mt-1 text-sm text-slate-500">{item.place}</p>{item.featured && <span className="mt-3 inline-flex rounded-full bg-brand-100 px-2.5 py-1 text-[10px] font-extrabold uppercase text-brand-600">En avant</span>}</article>)}</div>;
+  return <div className="grid gap-3 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-3">{items.map(event => <EventCard key={event.id} event={event} onEdit={onEdit} onDelete={onDelete} />)}</div>;
 }
 
 function EmptyList({ icon, message }: { icon: React.ReactNode; message: string }) { return <div className="p-10 text-center"><span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300">{icon}</span><p className="mt-3 text-sm text-slate-500">{message}</p></div>; }

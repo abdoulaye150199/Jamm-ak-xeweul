@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Activity, ArrowUpRight, Bell, CheckCircle2, ChevronRight, FileText,
@@ -9,6 +9,9 @@ import {
   Search, Settings, Users, X,
 } from 'lucide-react';
 import type { Contribution, ContributionStatus, ContributionType, DashboardEvent, DashboardMember, DashboardNotification } from '@/components/admin/types';
+import { EventFormPage } from '@/components/admin/event-form';
+import { EventCard } from '@/components/admin/event-card';
+import { DeleteEventDialog } from '@/components/admin/event-dialog';
 import { formatRelativeDate, formatTodayDate } from '@/lib/format';
 
 const sideLinks = [
@@ -23,6 +26,8 @@ export function AdminDashboard() {
   const [filter, setFilter] = useState<'Toutes' | ContributionType>('Toutes');
   const [query, setQuery] = useState('');
   const [eventOpen, setEventOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<DashboardEvent | null>(null);
+  const [deletingEvent, setDeletingEvent] = useState<DashboardEvent | null>(null);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [flash, setFlash] = useState('');
   const [members, setMembers] = useState<DashboardMember[]>([]);
@@ -95,27 +100,23 @@ export function AdminDashboard() {
     setFlash('Le rapport a été téléchargé.');
   }
 
-  async function publishEvent(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const response = await fetch('/api/admin/events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        date: formData.get('date'),
-        title: formData.get('title'),
-        time: formData.get('time'),
-        place: formData.get('place'),
-        featured: formData.get('featured') === 'on',
-      }),
-    }).catch(() => null);
-    if (!response?.ok) {
-      const data = await response?.json().catch(() => null);
-      setFlash(data?.error ?? 'Impossible de publier cet événement.');
-      return;
-    }
+  function openEventForm(event: DashboardEvent | null = null) {
+    setEditingEvent(event);
+    setFlash('');
+    setEventOpen(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function eventSaved() {
+    setFlash(editingEvent ? 'L’activité a été modifiée dans les agendas.' : 'L’activité est publiée et visible dans les agendas.');
     setEventOpen(false);
-    setFlash('L’événement est publié et visible sur la page d’accueil.');
+    setEditingEvent(null);
+    await refreshDashboard();
+  }
+
+  async function eventDeleted() {
+    setDeletingEvent(null);
+    setFlash('L’activité a été supprimée des agendas.');
     await refreshDashboard();
   }
 
@@ -125,10 +126,10 @@ export function AdminDashboard() {
     <div className="mx-auto flex max-w-[1540px] gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
       <AdminSidebar activeSection={activeSection} onNavigate={setActiveSection} onSettings={() => { setActiveSection('parametres'); setSettingsOpen(true); }} open={menuOpen} onClose={() => setMenuOpen(false)} onLogout={logout} />
       <main className="min-w-0 flex-1 lg:ml-[264px]">
-        {eventOpen ? <NewEventPage onClose={() => setEventOpen(false)} onSubmit={publishEvent} /> : <>
+        {eventOpen ? <EventFormPage key={editingEvent?.id ?? 'new'} event={editingEvent} onClose={() => setEventOpen(false)} onSaved={eventSaved} /> : <>
         <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="eyebrow text-brand-600">{formatTodayDate()} · Thiès-Nord</p><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Bonjour administrateur.</h1><p className="mt-2 text-sm text-slate-500 sm:text-base">Voici ce qui mérite votre attention aujourd’hui.</p></div>
-          <div className="flex flex-col gap-2 sm:flex-row"><button onClick={exportReport} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold shadow-sm transition hover:border-brand-300 hover:bg-brand-50"><ArrowUpRight size={16} /> Exporter le rapport</button><button onClick={() => setEventOpen(true)} className="btn-primary !rounded-xl !bg-brand-900"><Plus size={17} /> Nouvelle activité</button></div>
+          <div className="flex flex-col gap-2 sm:flex-row"><button onClick={exportReport} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold shadow-sm transition hover:border-brand-300 hover:bg-brand-50"><ArrowUpRight size={16} /> Exporter le rapport</button><button onClick={() => openEventForm()} className="btn-primary !rounded-xl !bg-brand-900"><Plus size={17} /> Nouvelle activité</button></div>
         </div>
         {flash && <div className="mb-5 flex items-center justify-between rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-bold text-brand-700"><span>{flash}</span><button onClick={() => setFlash('')} aria-label="Fermer le message"><X size={16} /></button></div>}
         {loadError && <div role="alert" className="mb-5 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-600"><span>{loadError}</span><button onClick={refreshDashboard} className="underline">Réessayer</button></div>}
@@ -145,7 +146,7 @@ export function AdminDashboard() {
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-1"><section className="rounded-3xl bg-brand-900 p-5 text-white shadow-soft sm:p-6"><div className="flex items-start justify-between"><div><p className="eyebrow text-sun-400">File de traitement</p><p className="mt-3 text-4xl font-black">{pendingCount}</p><p className="mt-1 text-sm text-white/55">contributions en attente</p></div><span className="rounded-2xl bg-sun-500/15 p-3 text-sun-400"><Bell size={21} /></span></div><div className="mt-6 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-sun-500" style={{ width: `${contributions.length ? (pendingCount / contributions.length) * 100 : 0}%` }} /></div><div className="mt-2 flex justify-between text-xs text-white/45"><span>À traiter</span><span>{contributions.length ? `${pendingCount} / ${contributions.length}` : '0'}</span></div><a href="#contributions" className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 text-sm font-bold transition hover:bg-brand-500">Ouvrir la file <ArrowUpRight size={15} /></a></section><RecentActivity notifications={notifications} onAction={() => setNotificationsOpen(true)} /></div>
         </div>
 
-        <section id="activites" className="mt-5 scroll-mt-24 rounded-3xl border border-slate-200 bg-white p-5 shadow-card sm:p-6"><div className="flex items-center justify-between gap-4"><div><p className="eyebrow text-brand-600">Activités terrain</p><h2 className="mt-2 text-xl font-extrabold">Événements publiés</h2><p className="mt-1 text-sm text-slate-500">Ils apparaissent automatiquement dans l’agenda de l’accueil.</p></div><button onClick={() => setEventOpen(true)} className="rounded-xl bg-brand-50 p-2.5 text-brand-600 transition hover:bg-brand-100" aria-label="Ajouter un événement"><Plus size={19} /></button></div>{publishedEvents.length ? <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{publishedEvents.map(event => <div key={event.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4"><div className="flex items-center gap-2 text-xs font-extrabold uppercase text-brand-600"><span className="rounded-lg bg-sun-100 px-2 py-1 text-sun-700">{event.weekday} {event.day}</span><span>{event.time}</span></div><p className="mt-3 font-extrabold">{event.title}</p><p className="mt-1 text-sm text-slate-500">{event.place}</p></div>)}</div> : <p className="mt-5 rounded-2xl border border-dashed border-slate-200 p-5 text-sm text-slate-500">Aucun nouvel événement publié pour le moment.</p>}</section>
+        <section id="activites" className="mt-5 scroll-mt-24 rounded-3xl border border-slate-200 bg-white p-5 shadow-card sm:p-6"><div className="flex items-center justify-between gap-4"><div><p className="eyebrow text-brand-600">Activités terrain</p><h2 className="mt-2 text-xl font-extrabold">Événements publiés</h2><p className="mt-1 text-sm text-slate-500">Ils apparaissent automatiquement dans l’agenda de l’accueil.</p></div><button onClick={() => openEventForm()} className="rounded-xl bg-brand-50 p-2.5 text-brand-600 transition hover:bg-brand-100" aria-label="Ajouter un événement"><Plus size={19} /></button></div>{publishedEvents.length ? <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{publishedEvents.map(event => <EventCard key={event.id} event={event} onEdit={openEventForm} onDelete={setDeletingEvent} />)}</div> : <p className="mt-5 rounded-2xl border border-dashed border-slate-200 p-5 text-sm text-slate-500">Aucun nouvel événement publié pour le moment.</p>}</section>
 
         <section id="membres" className="mt-5 scroll-mt-24 rounded-3xl border border-slate-200 bg-white p-5 shadow-card sm:p-6"><div className="flex items-center justify-between gap-4"><div><p className="eyebrow text-brand-600">Membres</p><h2 className="mt-2 text-xl font-extrabold">Dernières adhésions</h2><p className="mt-1 text-sm text-slate-500">Les nouvelles adhésions sont signalées automatiquement.</p></div><Users className="text-brand-500" /></div>{members.length ? <div className="mt-5 divide-y divide-slate-100">{members.slice(0, 5).map(member => <div key={member.id} className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold">{member.firstName} {member.lastName}</p><p className="text-xs text-slate-400">{member.email} · {member.neighborhood}</p></div><span className="text-xs font-bold text-brand-500">{formatRelativeDate(member.createdAt)}</span></div>)}</div> : <p className="mt-5 rounded-2xl border border-dashed border-slate-200 p-5 text-sm text-slate-500">Aucune nouvelle adhésion depuis la mise en place des notifications.</p>}</section>
 
@@ -153,6 +154,7 @@ export function AdminDashboard() {
         </>}
       </main>
     </div>
+    {deletingEvent && <DeleteEventDialog key={deletingEvent.id} event={deletingEvent} onClose={() => setDeletingEvent(null)} onDeleted={eventDeleted} />}
     {settingsOpen && <SettingsModal autoRefresh={autoRefresh} memberAlerts={memberAlerts} onClose={() => setSettingsOpen(false)} onSave={(nextAutoRefresh, nextMemberAlerts) => { setAutoRefresh(nextAutoRefresh); setMemberAlerts(nextMemberAlerts); setSettingsOpen(false); setFlash('Les paramètres ont été enregistrés.'); }} />}
   </div>;
 }
@@ -178,10 +180,6 @@ function EmptyState() { return <div className="p-8 text-center text-sm text-slat
 function RecentActivity({ notifications, onAction }: { notifications: DashboardNotification[]; onAction: () => void }) { return <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-card sm:p-6"><div className="flex items-center justify-between"><div><p className="eyebrow text-brand-600">Journal</p><h2 className="mt-2 text-xl font-extrabold">Activité récente</h2></div><button onClick={onAction} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100" aria-label="Voir toutes les notifications"><MoreHorizontal size={19} /></button></div><div className="mt-5 space-y-5">{notifications.slice(0, 3).map(notification => <Timeline key={notification.id} color={notification.type === 'member' ? 'green' : 'yellow'} title={notification.title} detail={`${notification.message} · ${formatRelativeDate(notification.createdAt)}`} />)}{!notifications.length && <Timeline color="blue" title="Aucune nouvelle activité" detail="Les événements apparaîtront ici." />}</div></section>; }
 function Timeline({ color, title, detail }: { color: 'green' | 'yellow' | 'blue'; title: string; detail: string }) { return <div className="flex gap-3"><span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${color === 'green' ? 'bg-brand-500' : color === 'yellow' ? 'bg-sun-500' : 'bg-blue-500'}`} /><div><p className="text-sm font-bold">{title}</p><p className="mt-1 text-xs text-slate-400">{detail}</p></div></div>; }
 function Priority({ icon, title, value, detail, tone }: { icon: React.ReactNode; title: string; value: string; detail: string; tone: 'yellow' | 'green' | 'blue' }) { const colors = { yellow: 'bg-sun-50 text-sun-600', green: 'bg-brand-50 text-brand-600', blue: 'bg-blue-50 text-blue-600' }; return <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-4"><span className={`rounded-xl p-2.5 ${colors[tone]}`}>{icon}</span><div className="min-w-0 flex-1"><p className="text-sm font-bold">{title}</p><p className="mt-1 text-xs text-slate-400">{detail}</p></div><p className="text-2xl font-black">{value}</p></div>; }
-
-export function NewEventPage({ onClose, onSubmit, backLabel = 'Retour au dashboard' }: { onClose: () => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void; backLabel?: string }) {
-  return <div className="min-h-[calc(100vh-108px)] bg-[#f4f7f3] py-2 text-brand-900 sm:py-4"><div className="mx-auto max-w-3xl"><button type="button" onClick={onClose} className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-brand-700"><ChevronRight size={16} className="rotate-180" /> {backLabel}</button><div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-card sm:p-10"><div className="border-b border-slate-100 pb-6"><p className="eyebrow text-brand-600">Activités terrain</p><h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">Publier une nouvelle activité</h1><p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">Complétez les informations ci-dessous. L’activité sera visible immédiatement dans l’agenda de la page d’accueil.</p></div><form onSubmit={onSubmit} className="mt-8 space-y-5"><label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Titre *</span><input name="title" required className="input-focus" placeholder="Causerie citoyenne" /></label><div className="grid gap-5 sm:grid-cols-2"><label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Date *</span><input name="date" required type="date" className="input-focus" /></label><label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Horaire *</span><input name="time" required className="input-focus" placeholder="16h00 — 18h00" /></label></div><label className="block"><span className="mb-2 block text-sm font-bold text-slate-700">Lieu *</span><input name="place" required className="input-focus" placeholder="Quartier Nguinth" /></label><label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 p-4 text-sm font-bold text-slate-600"><input name="featured" type="checkbox" className="h-4 w-4 rounded border-slate-300 text-brand-600" /> Mettre cet événement en avant sur l’agenda</label><div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:justify-end"><button type="button" onClick={onClose} className="btn-secondary">Annuler</button><button className="btn-primary"><Plus size={16} /> Publier l’activité</button></div></form></div></div></div>;
-}
 
 export function SettingsModal({ autoRefresh, memberAlerts, onClose, onSave }: { autoRefresh: boolean; memberAlerts: boolean; onClose: () => void; onSave: (autoRefresh: boolean, memberAlerts: boolean) => void }) {
   const [nextAutoRefresh, setNextAutoRefresh] = useState(autoRefresh);

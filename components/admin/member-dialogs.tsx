@@ -1,37 +1,10 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
-import { LoaderCircle, Trash2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { LoaderCircle, Trash2 } from 'lucide-react';
+import { AdminDialog } from '@/components/admin/dialog';
 import { Status } from '@/components/admin-dashboard';
 import type { DashboardMember, DashboardMemberDetails } from '@/components/admin/types';
-
-function MemberDialog({ title, children, onClose, busy = false, destructive = false }: { title: string; children: React.ReactNode; onClose: () => void; busy?: boolean; destructive?: boolean }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const titleId = useId();
-
-  useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog) return;
-    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    dialog.showModal();
-    dialog.querySelector<HTMLElement>('[data-initial-focus]')?.focus();
-    return () => {
-      dialog.close();
-      document.body.style.overflow = previousOverflow;
-      if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
-    };
-  }, []);
-
-  return <dialog ref={ref} role={destructive ? 'alertdialog' : 'dialog'} aria-labelledby={titleId} aria-busy={busy} onCancel={event => { event.preventDefault(); if (!busy) onClose(); }} onClick={event => { if (event.target === event.currentTarget && !busy) onClose(); }} className="m-auto max-h-[85vh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white p-0 text-brand-900 shadow-2xl backdrop:bg-brand-950/50">
-    <div className="flex items-start justify-between gap-4 border-b border-slate-100 p-5 sm:p-6">
-      <h2 id={titleId} className="text-xl font-extrabold">{title}</h2>
-      <button type="button" onClick={onClose} disabled={busy} aria-label="Fermer la fenêtre" className="shrink-0 rounded-lg p-1 text-slate-400 hover:bg-slate-100 disabled:opacity-40"><X size={20} /></button>
-    </div>
-    {children}
-  </dialog>;
-}
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -64,7 +37,7 @@ export function MemberDetailsDialog({ member, onClose, onDelete }: { member: Das
     return () => controller.abort();
   }, [member.id, reload]);
 
-  return <MemberDialog title="Détails du membre" onClose={onClose}>
+  return <AdminDialog title="Détails du membre" onClose={onClose}>
     <div className="p-5 sm:p-6">
       {loading ? <p role="status" className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500"><LoaderCircle size={18} className="animate-spin" /> Chargement du membre…</p> : error ? <div><p role="alert" className="rounded-xl bg-red-50 p-4 text-sm font-bold text-red-600">{error}</p><button type="button" onClick={() => setReload(value => value + 1)} className="btn-secondary mt-4">Réessayer</button></div> : details && <>
         <p className="break-words text-2xl font-extrabold">{details.member.firstName} {details.member.lastName}</p>
@@ -94,7 +67,7 @@ export function MemberDetailsDialog({ member, onClose, onDelete }: { member: Das
       <button type="button" onClick={onClose} className="btn-secondary">Fermer les détails</button>
       {details && !loading && !error && <button type="button" onClick={() => onDelete(details.member)} className="inline-flex items-center gap-2 rounded-full bg-red-50 px-5 py-3 text-sm font-bold text-red-600 hover:bg-red-100"><Trash2 size={16} /> Supprimer ce membre</button>}
     </div>
-  </MemberDialog>;
+  </AdminDialog>;
 }
 
 function MemberField({ label, children }: { label: string; children: React.ReactNode }) {
@@ -106,7 +79,7 @@ function MemberCount({ label, value }: { label: string; value: number }) {
 }
 
 export function DeleteMemberDialog({ member, busy, error, onClose, onConfirm }: { member: DashboardMember; busy: boolean; error: string; onClose: () => void; onConfirm: () => void }) {
-  return <MemberDialog title="Supprimer ce membre ?" onClose={onClose} busy={busy} destructive>
+  return <AdminDialog title="Supprimer ce membre ?" onClose={onClose} busy={busy} destructive>
     <div className="p-5 sm:p-6">
       <p className="break-words text-sm leading-6 text-slate-600">Le compte de <strong className="text-brand-900">{member.firstName} {member.lastName}</strong> et ses notifications personnelles seront supprimés. Ce membre ne pourra plus se connecter.</p>
       <p className="mt-3 text-sm leading-6 text-slate-500">Ses contributions seront conservées dans l’administration pour assurer leur suivi. La suppression du compte est définitive.</p>
@@ -116,5 +89,5 @@ export function DeleteMemberDialog({ member, busy, error, onClose, onConfirm }: 
       <button type="button" data-initial-focus onClick={onClose} disabled={busy} className="btn-secondary disabled:opacity-50">Annuler</button>
       <button type="button" onClick={onConfirm} disabled={busy} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50">{busy ? <LoaderCircle size={16} className="animate-spin" /> : <Trash2 size={16} />}{busy ? 'Suppression…' : 'Supprimer définitivement'}</button>
     </div>
-  </MemberDialog>;
+  </AdminDialog>;
 }

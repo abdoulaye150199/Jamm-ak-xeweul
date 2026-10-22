@@ -4,6 +4,7 @@ import { and, count, countDistinct, desc, eq, ilike, isNull, or, sql } from 'dri
 import { contributions, events, members, notifications } from '@/db/schema';
 import { getDb } from '@/lib/db';
 import { readDatabase } from '@/lib/db-retry';
+import type { EventInput } from '@/lib/event-input';
 
 export type StoredEvent = {
   id: string;
@@ -190,6 +191,16 @@ export async function addEvent(input: Omit<StoredEvent, 'id' | 'createdAt' | 'ev
     return createdEvent;
   });
   return mapEvent(event);
+}
+
+export async function updateEvent(id: string, input: EventInput) {
+  const [event] = await getDb().update(events).set(input).where(eq(events.id, id)).returning();
+  return event ? mapEvent(event) : null;
+}
+
+export async function deleteEvent(id: string) {
+  const [event] = await getDb().delete(events).where(eq(events.id, id)).returning({ id: events.id });
+  return event ?? null;
 }
 
 export async function addMember(input: Omit<Member, 'id' | 'createdAt'> & { passwordHash: string }) {
